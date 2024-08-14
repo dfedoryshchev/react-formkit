@@ -19,31 +19,33 @@ const Form = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        console.log({ name, email, age, role, agree })
+        const data = { name, email, age, role, agree }
+        alert(JSON.stringify(data, null, 2))
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div>
+        <form onSubmit={handleSubmit} style={{ maxWidth: 400, margin: '20px auto' }}>
+            <h2>Registration</h2>
+            <div style={{ marginBottom: 12 }}>
                 <label>Name</label>
-                <TextInput value={name} onChange={setName} />
+                <TextInput value={name} onChange={setName} placeholder="Your name" />
             </div>
-            <div>
+            <div style={{ marginBottom: 12 }}>
                 <label>Email</label>
-                <TextInput value={email} onChange={setEmail} />
+                <TextInput value={email} onChange={setEmail} placeholder="Email address" />
             </div>
-            <div>
+            <div style={{ marginBottom: 12 }}>
                 <label>Age</label>
                 <NumberInput value={age} onChange={setAge} />
             </div>
-            <div>
+            <div style={{ marginBottom: 12 }}>
                 <label>Role</label>
                 <Select value={role} onChange={setRole} options={roleOptions} />
             </div>
-            <div>
+            <div style={{ marginBottom: 12 }}>
                 <Checkbox checked={agree} onChange={setAgree} label="I agree to terms" />
             </div>
-            <button type="submit">Submit</button>
+            <button type="submit" style={{ padding: '8px 16px' }}>Submit</button>
         </form>
     )
 }
