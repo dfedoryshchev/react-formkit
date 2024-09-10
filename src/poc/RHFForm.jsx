@@ -1,8 +1,40 @@
 import React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useController } from 'react-hook-form'
+
+const ControlledInput = ({ control, name, label, rules }) => {
+    const { field, fieldState } = useController({ control, name, rules })
+
+    return (
+        <div>
+            <label>{label}</label>
+            <input {...field} />
+            {fieldState.error && (
+                <span style={{ color: 'red' }}>{fieldState.error.message}</span>
+            )}
+        </div>
+    )
+}
+
+const ControlledSelect = ({ control, name, label, options }) => {
+    const { field } = useController({ control, name })
+
+    return (
+        <div>
+            <label>{label}</label>
+            <select {...field}>
+                <option value="">-- select --</option>
+                {options.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+            </select>
+        </div>
+    )
+}
 
 const RHFForm = () => {
-    const { register, handleSubmit, formState: { errors } } = useForm()
+    const { control, handleSubmit } = useForm({
+        defaultValues: { name: '', email: '', role: '' }
+    })
 
     const onSubmit = (data) => {
         alert(JSON.stringify(data, null, 2))
@@ -10,24 +42,17 @@ const RHFForm = () => {
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
-            <div>
-                <label>Name</label>
-                <input {...register('name', { required: 'Name is required' })} />
-                {errors.name && <span style={{ color: 'red' }}>{errors.name.message}</span>}
-            </div>
-            <div>
-                <label>Email</label>
-                <input {...register('email', { required: true, pattern: /^\S+@\S+$/i })} />
-                {errors.email && <span style={{ color: 'red' }}>Invalid email</span>}
-            </div>
-            <div>
-                <label>Role</label>
-                <select {...register('role')}>
-                    <option value="">-- select --</option>
-                    <option value="dev">Developer</option>
-                    <option value="pm">PM</option>
-                </select>
-            </div>
+            <ControlledInput control={control} name="name" label="Name" rules={{ required: 'Name required' }} />
+            <ControlledInput control={control} name="email" label="Email" rules={{ required: 'Email required' }} />
+            <ControlledSelect
+                control={control}
+                name="role"
+                label="Role"
+                options={[
+                    { value: 'dev', label: 'Developer' },
+                    { value: 'pm', label: 'PM' },
+                ]}
+            />
             <button type="submit">Submit</button>
         </form>
     )
