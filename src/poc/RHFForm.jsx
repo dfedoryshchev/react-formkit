@@ -1,26 +1,30 @@
 import React from 'react'
-import { useForm, useController } from 'react-hook-form'
+import { useForm, FormProvider, useFormContext, useController } from 'react-hook-form'
 
-const ControlledInput = ({ control, name, label, rules }) => {
+const FormInput = ({ name, label, rules }) => {
+    const { control } = useFormContext()
     const { field, fieldState } = useController({ control, name, rules })
 
     return (
-        <div>
+        <div style={{ marginBottom: 10 }}>
             <label>{label}</label>
+            <br />
             <input {...field} />
             {fieldState.error && (
-                <span style={{ color: 'red' }}>{fieldState.error.message}</span>
+                <span style={{ color: 'red', fontSize: 12 }}>{fieldState.error.message}</span>
             )}
         </div>
     )
 }
 
-const ControlledSelect = ({ control, name, label, options }) => {
+const FormSelect = ({ name, label, options }) => {
+    const { control } = useFormContext()
     const { field } = useController({ control, name })
 
     return (
-        <div>
+        <div style={{ marginBottom: 10 }}>
             <label>{label}</label>
+            <br />
             <select {...field}>
                 <option value="">-- select --</option>
                 {options.map(o => (
@@ -31,8 +35,10 @@ const ControlledSelect = ({ control, name, label, options }) => {
     )
 }
 
+// this is nice. FormProvider wraps everything, child components pull context
+// no need to drill control prop everywhere
 const RHFForm = () => {
-    const { control, handleSubmit } = useForm({
+    const methods = useForm({
         defaultValues: { name: '', email: '', role: '' }
     })
 
@@ -41,20 +47,22 @@ const RHFForm = () => {
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)}>
-            <ControlledInput control={control} name="name" label="Name" rules={{ required: 'Name required' }} />
-            <ControlledInput control={control} name="email" label="Email" rules={{ required: 'Email required' }} />
-            <ControlledSelect
-                control={control}
-                name="role"
-                label="Role"
-                options={[
-                    { value: 'dev', label: 'Developer' },
-                    { value: 'pm', label: 'PM' },
-                ]}
-            />
-            <button type="submit">Submit</button>
-        </form>
+        <FormProvider {...methods}>
+            <form onSubmit={methods.handleSubmit(onSubmit)}>
+                <FormInput name="name" label="Name" rules={{ required: 'Name required' }} />
+                <FormInput name="email" label="Email" rules={{ required: 'Email required' }} />
+                <FormSelect
+                    name="role"
+                    label="Role"
+                    options={[
+                        { value: 'dev', label: 'Developer' },
+                        { value: 'pm', label: 'PM' },
+                        { value: 'qa', label: 'QA' },
+                    ]}
+                />
+                <button type="submit">Submit</button>
+            </form>
+        </FormProvider>
     )
 }
 
