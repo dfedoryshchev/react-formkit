@@ -10,14 +10,14 @@ const roleOptions = [
     { value: 'qa', label: 'QA' },
 ]
 
-const Form = () => {
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
-    const [age, setAge] = useState(undefined)
-    const [role, setRole] = useState('')
-    const [agree, setAgree] = useState(false)
+const Form: React.FC = () => {
+    const [name, setName] = useState<string>('')
+    const [email, setEmail] = useState<string>('')
+    const [age, setAge] = useState<number | undefined>(undefined)
+    const [role, setRole] = useState<string>('')
+    const [agree, setAgree] = useState<boolean>(false)
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         const data = { name, email, age, role, agree }
         alert(JSON.stringify(data, null, 2))
