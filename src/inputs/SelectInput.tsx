@@ -1,9 +1,10 @@
 import React, { forwardRef } from 'react'
 import { Option } from '../types'
+import { serializeValue, getOptionLabel, getOptionValue, isUnselected } from '../utils/select.utils'
 
 interface SelectInputProps {
-    value: string
-    onChange: (value: string) => void
+    value: unknown
+    onChange: (value: unknown) => void
     options: Option[]
     placeholder?: string
     disabled?: boolean
@@ -12,18 +13,28 @@ interface SelectInputProps {
 
 const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
     ({ value, onChange, options, placeholder, disabled, className }, ref) => {
+        const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+            const selectedSerialized = e.target.value
+            if (isUnselected(selectedSerialized)) {
+                onChange(undefined)
+                return
+            }
+            const found = options.find(o => serializeValue(getOptionValue(o)) === selectedSerialized)
+            onChange(found ? getOptionValue(found) : selectedSerialized)
+        }
+
         return (
             <select
                 ref={ref}
-                value={value || ''}
-                onChange={e => onChange(e.target.value)}
+                value={serializeValue(value)}
+                onChange={handleChange}
                 disabled={disabled}
                 className={className}
             >
                 {placeholder && <option value="">{placeholder}</option>}
-                {options.map(opt => (
-                    <option key={String(opt.value)} value={String(opt.value)}>
-                        {opt.label}
+                {options.map((opt, i) => (
+                    <option key={i} value={serializeValue(getOptionValue(opt))}>
+                        {getOptionLabel(opt)}
                     </option>
                 ))}
             </select>
