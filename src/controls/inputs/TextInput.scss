@@ -1,0 +1,20 @@
+.custom-text-input-restarted {
+    input {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #dbdbdb;
+        border-radius: 4px;
+        font-size: 14px;
+
+        &:focus {
+            border-color: #485fc7;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(72, 95, 199, 0.15);
+        }
+
+        &:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+    }
+}

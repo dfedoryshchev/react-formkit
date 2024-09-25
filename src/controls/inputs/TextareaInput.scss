@@ -1,0 +1,15 @@
+.custom-textarea-input-restarted {
+    textarea {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #dbdbdb;
+        border-radius: 4px;
+        font-size: 14px;
+        resize: vertical;
+
+        &:focus {
+            border-color: #485fc7;
+            outline: none;
+        }
+    }
+}

@@ -1,0 +1,15 @@
+.custom-checkbox-input-restarted {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+    }
+
+    span {
+        font-size: 14px;
+    }
+}
