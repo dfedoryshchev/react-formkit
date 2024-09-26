@@ -16,13 +16,13 @@ const CheckboxInput = forwardRef<HTMLInputElement, CheckboxInputProps>(
                     ref={ref}
                     type="checkbox"
                     checked={!!checked}
-                    onChange={e => onChange(e.target.checked)}
+                    onChange={(e) => onChange(e.target.checked)}
                     disabled={disabled}
                 />
                 {label && <span>{label}</span>}
             </label>
         )
-    }
+    },
 )
 
 CheckboxInput.displayName = 'CheckboxInput'

@@ -27,8 +27,10 @@ const FormSelect = ({ name, label, options }) => {
             <br />
             <select {...field}>
                 <option value="">-- select --</option>
-                {options.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                {options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                        {o.label}
+                    </option>
                 ))}
             </select>
         </div>
@@ -39,7 +41,7 @@ const FormSelect = ({ name, label, options }) => {
 // no need to drill control prop everywhere
 const RHFForm = () => {
     const methods = useForm({
-        defaultValues: { name: '', email: '', role: '' }
+        defaultValues: { name: '', email: '', role: '' },
     })
 
     const onSubmit = (data) => {

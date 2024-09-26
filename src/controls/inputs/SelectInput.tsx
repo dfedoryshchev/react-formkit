@@ -1,6 +1,11 @@
 import React, { forwardRef } from 'react'
 import { Option } from '../../types'
-import { serializeValue, getOptionLabel, getOptionValue, isUnselected } from '../../utils/select.utils'
+import {
+    serializeValue,
+    getOptionLabel,
+    getOptionValue,
+    isUnselected,
+} from '../../utils/select.utils'
 
 interface SelectInputProps {
     value: unknown
@@ -19,7 +24,9 @@ const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
                 onChange(undefined)
                 return
             }
-            const found = options.find(o => serializeValue(getOptionValue(o)) === selectedSerialized)
+            const found = options.find(
+                (o) => serializeValue(getOptionValue(o)) === selectedSerialized,
+            )
             onChange(found ? getOptionValue(found) : selectedSerialized)
         }
 
@@ -39,7 +46,7 @@ const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
                 ))}
             </select>
         )
-    }
+    },
 )
 
 SelectInput.displayName = 'SelectInput'

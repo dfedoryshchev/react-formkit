@@ -29,7 +29,14 @@ const Control: React.FC<ControlProps> = ({ type, ...props }) => {
         case 'select':
             return <SelectInput {...props} />
         case 'checkbox':
-            return <CheckboxInput checked={!!props.value} onChange={props.onChange} label={props.label} disabled={props.disabled} />
+            return (
+                <CheckboxInput
+                    checked={!!props.value}
+                    onChange={props.onChange}
+                    label={props.label}
+                    disabled={props.disabled}
+                />
+            )
         default:
             return <TextInput {...props} />
     }

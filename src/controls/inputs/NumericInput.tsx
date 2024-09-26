@@ -4,7 +4,7 @@ import { NumericInputProps } from '../../types'
 const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
     ({ value, onChange, placeholder, disabled, min, max }, ref) => {
         const [displayValue, setDisplayValue] = useState<string>(
-            value !== undefined ? String(value) : ''
+            value !== undefined ? String(value) : '',
         )
 
         useEffect(() => {
@@ -36,7 +36,7 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
                 disabled={disabled}
             />
         )
-    }
+    },
 )
 
 NumericInput.displayName = 'NumericInput'

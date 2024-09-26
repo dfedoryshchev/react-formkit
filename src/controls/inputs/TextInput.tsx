@@ -8,13 +8,13 @@ const TextInput = forwardRef<HTMLInputElement, BaseInputProps>(
                 ref={ref}
                 type="text"
                 value={value || ''}
-                onChange={e => onChange(e.target.value)}
+                onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
                 disabled={disabled}
                 className={className}
             />
         )
-    }
+    },
 )
 
 TextInput.displayName = 'TextInput'
