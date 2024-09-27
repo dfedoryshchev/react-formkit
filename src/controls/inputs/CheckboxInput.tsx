@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react'
+import './CheckboxInput.scss'
 
 interface CheckboxInputProps {
     checked: boolean
@@ -9,9 +10,9 @@ interface CheckboxInputProps {
 }
 
 const CheckboxInput = forwardRef<HTMLInputElement, CheckboxInputProps>(
-    ({ checked, onChange, label, disabled, className }, ref) => {
+    ({ checked, onChange, label, disabled }, ref) => {
         return (
-            <label className={className}>
+            <label className="custom-checkbox-input-restarted">
                 <input
                     ref={ref}
                     type="checkbox"

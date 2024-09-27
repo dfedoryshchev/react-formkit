@@ -6,6 +6,7 @@ import {
     getOptionValue,
     isUnselected,
 } from '../../utils/select.utils'
+import './SelectInput.scss'
 
 interface SelectInputProps {
     value: unknown
@@ -31,20 +32,22 @@ const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
         }
 
         return (
-            <select
-                ref={ref}
-                value={serializeValue(value)}
-                onChange={handleChange}
-                disabled={disabled}
-                className={className}
-            >
-                {placeholder && <option value="">{placeholder}</option>}
-                {options.map((opt, i) => (
-                    <option key={i} value={serializeValue(getOptionValue(opt))}>
-                        {getOptionLabel(opt)}
-                    </option>
-                ))}
-            </select>
+            <div className="custom-select-input-restarted">
+                <select
+                    ref={ref}
+                    value={serializeValue(value)}
+                    onChange={handleChange}
+                    disabled={disabled}
+                    className={className}
+                >
+                    {placeholder && <option value="">{placeholder}</option>}
+                    {options.map((opt, i) => (
+                        <option key={i} value={serializeValue(getOptionValue(opt))}>
+                            {getOptionLabel(opt)}
+                        </option>
+                    ))}
+                </select>
+            </div>
         )
     },
 )
