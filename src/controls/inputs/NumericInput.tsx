@@ -1,8 +1,9 @@
 import React, { forwardRef, useState, useEffect } from 'react'
 import { NumericInputProps } from '../../types'
+import './NumericInput.scss'
 
 const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
-    ({ value, onChange, placeholder, disabled, min, max }, ref) => {
+    ({ value, onChange, placeholder, disabled }, ref) => {
         const [displayValue, setDisplayValue] = useState<string>(
             value !== undefined ? String(value) : '',
         )
@@ -26,15 +27,17 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
         }
 
         return (
-            <input
-                ref={ref}
-                type="text"
-                inputMode="numeric"
-                value={displayValue}
-                onChange={handleChange}
-                placeholder={placeholder}
-                disabled={disabled}
-            />
+            <div className="custom-numeric-input-restarted">
+                <input
+                    ref={ref}
+                    type="text"
+                    inputMode="numeric"
+                    value={displayValue}
+                    onChange={handleChange}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                />
+            </div>
         )
     },
 )
