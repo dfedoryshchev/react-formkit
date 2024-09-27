@@ -4,41 +4,52 @@ import NumericInput from './inputs/NumericInput'
 import TextareaInput from './inputs/TextareaInput'
 import SelectInput from './inputs/SelectInput'
 import CheckboxInput from './inputs/CheckboxInput'
+import { Option } from '../types'
 
-type ControlType = 'text' | 'numeric' | 'textarea' | 'select' | 'checkbox'
+export type ControlType = 'text' | 'numeric' | 'textarea' | 'select' | 'checkbox'
 
-interface ControlProps {
+interface BaseControlProps {
     type: ControlType
     value: any
     onChange: (value: any) => void
-    options?: any[]
-    label?: string
     placeholder?: string
     disabled?: boolean
-    [key: string]: any
+    className?: string
 }
 
-const Control: React.FC<ControlProps> = ({ type, ...props }) => {
+interface SelectControlProps extends BaseControlProps {
+    type: 'select'
+    options: Option[]
+}
+
+interface CheckboxControlProps extends BaseControlProps {
+    type: 'checkbox'
+    label?: string
+}
+
+type ControlProps = SelectControlProps | CheckboxControlProps | BaseControlProps
+
+const Control: React.FC<ControlProps> = ({ type, ...rest }) => {
     switch (type) {
         case 'text':
-            return <TextInput {...props} />
+            return <TextInput {...rest} />
         case 'numeric':
-            return <NumericInput {...props} />
+            return <NumericInput {...rest} />
         case 'textarea':
-            return <TextareaInput {...props} />
+            return <TextareaInput {...rest} />
         case 'select':
-            return <SelectInput {...props} />
+            return <SelectInput {...(rest as any)} />
         case 'checkbox':
             return (
                 <CheckboxInput
-                    checked={!!props.value}
-                    onChange={props.onChange}
-                    label={props.label}
-                    disabled={props.disabled}
+                    checked={!!rest.value}
+                    onChange={rest.onChange}
+                    label={(rest as any).label}
+                    disabled={rest.disabled}
                 />
             )
         default:
-            return <TextInput {...props} />
+            return <TextInput {...rest} />
     }
 }
 
