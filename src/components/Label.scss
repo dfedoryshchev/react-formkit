@@ -1,0 +1,17 @@
+.custom-field-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+
+    label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #363636;
+    }
+
+    .required-mark {
+        color: #f14668;
+        margin-left: 2px;
+    }
+}
