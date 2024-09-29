@@ -1,0 +1,17 @@
+.custom-field-message {
+    font-size: 12px;
+    margin-top: 4px;
+    min-height: 18px;
+
+    &--error {
+        color: #f14668;
+    }
+
+    &--warning {
+        color: #ffe08a;
+    }
+
+    &--info {
+        color: #3e8ed0;
+    }
+}
