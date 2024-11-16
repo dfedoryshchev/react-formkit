@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react'
-import { BaseInputProps } from '../../types'
+import { BaseInputProps } from '../control.types'
 import './TextInput.scss'
 
 const TextInput = forwardRef<HTMLInputElement, BaseInputProps>(

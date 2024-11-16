@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react'
-import { Option } from '../../types'
+import { Option } from '../control.types'
 import {
     serializeValue,
     getOptionLabel,

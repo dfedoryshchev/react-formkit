@@ -1,5 +1,5 @@
 import React, { forwardRef, useState, useEffect } from 'react'
-import { NumericInputProps } from '../../types'
+import { NumericInputProps } from '../control.types'
 import './NumericInput.scss'
 
 const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
