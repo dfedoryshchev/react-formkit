@@ -7,11 +7,13 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,scss}\""
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.0",
     "bulma": "^1.0.0",
     "classnames": "^2.5.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-hook-form": "^7.46.0"
+    "react-hook-form": "^7.46.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
