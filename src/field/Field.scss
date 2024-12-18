@@ -1,0 +1,12 @@
+.custom-field {
+    margin-bottom: 16px;
+
+    &--error {
+        .custom-text-input-restarted input,
+        .custom-numeric-input-restarted input,
+        .custom-textarea-input-restarted textarea,
+        .custom-select-input-restarted select {
+            border-color: #f14668;
+        }
+    }
+}
