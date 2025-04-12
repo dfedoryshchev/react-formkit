@@ -37,7 +37,13 @@ const App = () => {
                 </div>
                 <div style={{ marginBottom: 12 }}>
                     <label>Role</label>
-                    <Control type="select" value={role} onChange={setRole} options={options} placeholder="-- pick --" />
+                    <Control
+                        type="select"
+                        value={role}
+                        onChange={setRole}
+                        options={options}
+                        placeholder="-- pick --"
+                    />
                 </div>
                 <div style={{ marginBottom: 12 }}>
                     <Control type="checkbox" value={agree} onChange={setAgree} label="I agree" />

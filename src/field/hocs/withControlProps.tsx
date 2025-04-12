@@ -12,9 +12,7 @@ const FIELD_PROPS = [
 
 type FieldPropKey = (typeof FIELD_PROPS)[number]
 
-export const withControlProps = <P extends object>(
-    WrappedComponent: React.ComponentType<P>,
-) => {
+export const withControlProps = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
     const WithControlProps = React.forwardRef<unknown, P & Record<FieldPropKey, any>>(
         (props, ref) => {
             const controlProps = { ...props } as any

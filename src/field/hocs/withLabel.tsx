@@ -6,9 +6,7 @@ interface WithLabelProps {
     required?: boolean
 }
 
-export const withLabel = <P extends WithLabelProps>(
-    WrappedComponent: React.ComponentType<P>,
-) => {
+export const withLabel = <P extends WithLabelProps>(WrappedComponent: React.ComponentType<P>) => {
     const WithLabel = React.forwardRef<unknown, P & WithLabelProps>((props, ref) => {
         const { label, required, ...rest } = props as any
 

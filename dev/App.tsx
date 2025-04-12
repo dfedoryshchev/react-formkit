@@ -43,7 +43,13 @@ const App = () => {
                 <FormField name="email" type="text" label="Email" placeholder="email@example.com" />
                 <FormField name="age" type="numeric" label="Age" />
                 <FormField name="bio" type="textarea" label="Bio" />
-                <FormField name="role" type="select" label="Role" options={roleOptions} placeholder="-- select --" />
+                <FormField
+                    name="role"
+                    type="select"
+                    label="Role"
+                    options={roleOptions}
+                    placeholder="-- select --"
+                />
                 <FormField name="agree" type="checkbox" label="I agree to the terms" />
                 <button type="submit" style={{ marginTop: 16, padding: '8px 20px' }}>
                     Submit
