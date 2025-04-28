@@ -1,7 +1,8 @@
 import React from 'react'
-import { useForm, FormProvider } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { FormProvider } from 'react-hook-form'
 import { ZodSchema } from 'zod'
+import { useFormConfig } from '../validation/useFormConfig'
+import { ValidationSchemaContext } from '../validation/ValidationSchemaContext'
 
 interface BasicFormProps {
     onSubmit: (data: any) => void
@@ -16,15 +17,14 @@ const BasicForm: React.FC<BasicFormProps> = ({
     defaultValues = {},
     children,
 }) => {
-    const methods = useForm({
-        defaultValues,
-        ...(validationSchema ? { resolver: zodResolver(validationSchema) } : {}),
-    })
+    const methods = useFormConfig({ validationSchema, defaultValues })
 
     return (
-        <FormProvider {...methods}>
-            <form onSubmit={methods.handleSubmit(onSubmit)}>{children}</form>
-        </FormProvider>
+        <ValidationSchemaContext.Provider value={validationSchema}>
+            <FormProvider {...methods}>
+                <form onSubmit={methods.handleSubmit(onSubmit)}>{children}</form>
+            </FormProvider>
+        </ValidationSchemaContext.Provider>
     )
 }
 
