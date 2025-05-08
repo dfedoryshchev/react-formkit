@@ -1,5 +1,6 @@
 import React from 'react'
 import { useController, useFormContext } from 'react-hook-form'
+import { useIsFieldRequired } from '../validation/useIsFieldRequired'
 import Field from './Field'
 
 interface FormFieldProps {
@@ -11,8 +12,15 @@ interface FormFieldProps {
     [key: string]: any
 }
 
-const FormField: React.FC<FormFieldProps> = ({ name, type, defaultValue, ...rest }) => {
+const FormField: React.FC<FormFieldProps> = ({
+    name,
+    type,
+    required: explicitRequired,
+    defaultValue,
+    ...rest
+}) => {
     const { control } = useFormContext()
+    const schemaRequired = useIsFieldRequired(name)
 
     const {
         field: { value, onChange, onBlur, ref },
@@ -32,6 +40,7 @@ const FormField: React.FC<FormFieldProps> = ({ name, type, defaultValue, ...rest
             onBlur={onBlur}
             ref={ref}
             errorMessage={error?.message}
+            required={explicitRequired ?? schemaRequired}
             {...rest}
         />
     )

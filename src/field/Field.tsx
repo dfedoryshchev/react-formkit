@@ -3,6 +3,7 @@ import Control from '../controls/Control'
 import { withLabel } from './hocs/withLabel'
 import { withFieldMessage } from './hocs/withFieldMessage'
 import { withControlProps } from './hocs/withControlProps'
+import { withRequired } from './hocs/withRequired'
 
 interface FieldProps {
     type: string
@@ -15,9 +16,8 @@ interface FieldProps {
 }
 
 const Field: React.FC<FieldProps> = (props) => {
-    const { type, label, required, errorMessage, warningMessage, ...rest } = props
+    const { type, label, ...rest } = props
 
-    // dynamically compose HOCs based on what props are present
     const EnhancedControl = useMemo(() => {
         let component: any = Control
 
@@ -28,20 +28,12 @@ const Field: React.FC<FieldProps> = (props) => {
         }
 
         component = withFieldMessage(component)
+        component = withRequired(component)
 
         return component
     }, [label])
 
-    return (
-        <EnhancedControl
-            type={type}
-            label={label}
-            required={required}
-            errorMessage={errorMessage}
-            warningMessage={warningMessage}
-            {...rest}
-        />
-    )
+    return <EnhancedControl type={type} label={label} {...rest} />
 }
 
 export default Field
