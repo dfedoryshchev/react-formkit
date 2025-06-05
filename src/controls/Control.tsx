@@ -4,10 +4,20 @@ import NumericInput from './inputs/NumericInput'
 import TextareaInput from './inputs/TextareaInput'
 import SelectInput from './inputs/SelectInput'
 import CheckboxInput from './inputs/CheckboxInput'
+import EmailInput from './inputs/EmailInput'
+import UrlInput from './inputs/UrlInput'
 import RadioGroup from './toggles/RadioGroup'
 import { Option } from './control.types'
 
-export type ControlType = 'text' | 'numeric' | 'textarea' | 'select' | 'checkbox' | 'radio'
+export type ControlType =
+    | 'text'
+    | 'numeric'
+    | 'textarea'
+    | 'select'
+    | 'checkbox'
+    | 'radio'
+    | 'email'
+    | 'url'
 
 interface BaseControlProps {
     type: ControlType
@@ -65,6 +75,10 @@ const Control: React.FC<ControlProps> = ({ type, ...rest }) => {
                     disabled={rest.disabled}
                 />
             )
+        case 'email':
+            return <EmailInput {...rest} />
+        case 'url':
+            return <UrlInput {...rest} />
         default:
             return <TextInput {...rest} />
     }
