@@ -7,6 +7,9 @@ import CheckboxInput from './inputs/CheckboxInput'
 import EmailInput from './inputs/EmailInput'
 import UrlInput from './inputs/UrlInput'
 import RadioGroup from './toggles/RadioGroup'
+import DateInput from './datetime/DateInput'
+import TimeInput from './datetime/TimeInput'
+import DateTimeInput from './datetime/DateTimeInput'
 import { Option } from './control.types'
 
 export type ControlType =
@@ -18,6 +21,9 @@ export type ControlType =
     | 'radio'
     | 'email'
     | 'url'
+    | 'date'
+    | 'time'
+    | 'datetime'
 
 interface BaseControlProps {
     type: ControlType
@@ -79,6 +85,12 @@ const Control: React.FC<ControlProps> = ({ type, ...rest }) => {
             return <EmailInput {...rest} />
         case 'url':
             return <UrlInput {...rest} />
+        case 'date':
+            return <DateInput {...rest} />
+        case 'time':
+            return <TimeInput {...rest} />
+        case 'datetime':
+            return <DateTimeInput {...rest} />
         default:
             return <TextInput {...rest} />
     }
