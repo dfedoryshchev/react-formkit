@@ -1,0 +1,21 @@
+.custom-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+
+        input[type='checkbox'] {
+            width: 16px;
+            height: 16px;
+        }
+
+        span {
+            font-size: 14px;
+        }
+    }
+}
