@@ -1,14 +1,16 @@
 # react-formkit
 
-React + TypeScript form component library built on top of React Hook Form and Zod.
+React + TypeScript form component library built on React Hook Form and Zod.
 
-## Features
+## Architecture
 
-- Composable form fields with HOC pattern (label, validation message, required indicator)
-- Typed control components: text, numeric, textarea, select, checkbox
-- Zod schema validation via `@hookform/resolvers`
-- `BasicForm` wrapper with `FormProvider`
-- `FormField` bridges React Hook Form's `useController` to field components
+```
+BasicForm (FormProvider + zodResolver)
+  └─ FormField (useController bridge)
+       └─ Field (HOC composition: withRequired → withFieldMessage → withLabel → withControlProps)
+            └─ Control (type router)
+                 └─ TextInput | NumericInput | SelectInput | CheckboxInput | RadioGroup | ...
+```
 
 ## Available Controls
 
@@ -17,8 +19,26 @@ React + TypeScript form component library built on top of React Hook Form and Zo
 | `text` | TextInput | Standard text input |
 | `numeric` | NumericInput | Number input with empty value handling |
 | `textarea` | TextareaInput | Multi-line text |
-| `select` | SelectInput | Dropdown with typed options |
+| `select` | SelectInput | Dropdown with typed options and serialization |
 | `checkbox` | CheckboxInput | Boolean checkbox |
+| `radio` | RadioGroup | Radio button group |
+| `email` | EmailInput | Email-specific input |
+| `url` | UrlInput | URL input |
+| `date` | DateInput | Date picker |
+| `time` | TimeInput | Time picker |
+| `datetime` | DateTimeInput | Date + time picker |
+
+## Validation
+
+Built-in validators using Zod:
+
+```tsx
+import { required, email, minLength } from './validation/validators/common.validators'
+import { positive, between } from './validation/validators/number.validators'
+import { latinOnly } from './validation/validators/charset.validators'
+```
+
+Schema-driven required field detection via `useIsFieldRequired` — fields with `.describe('required')` or `min(1)` automatically show the required indicator.
 
 ## Usage
 
@@ -28,15 +48,21 @@ import FormField from './field/FormField'
 import { z } from 'zod'
 
 const schema = z.object({
-    name: z.string().min(2),
+    name: z.string().min(2, 'Too short'),
     email: z.string().email(),
+    role: z.string().min(1, 'Required'),
+    agree: z.boolean(),
 })
 
-<BasicForm onSubmit={handleSubmit} validationSchema={schema}>
-    <FormField name="name" type="text" label="Name" />
-    <FormField name="email" type="text" label="Email" />
-    <button type="submit">Submit</button>
-</BasicForm>
+const MyForm = () => (
+    <BasicForm onSubmit={console.log} validationSchema={schema}>
+        <FormField name="name" type="text" label="Name" />
+        <FormField name="email" type="email" label="Email" />
+        <FormField name="role" type="select" label="Role" options={roleOptions} />
+        <FormField name="agree" type="checkbox" label="I agree" />
+        <button type="submit">Submit</button>
+    </BasicForm>
+)
 ```
 
 ## Dev
@@ -48,4 +74,4 @@ npm run dev
 
 ## Status
 
-WIP — core controls and form integration work. Validation, additional input types, and tests are in progress.
+Active development. Core form system, validation, and base controls are functional. Upcoming: tests, additional controls, monorepo split.
