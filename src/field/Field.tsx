@@ -15,6 +15,8 @@ interface FieldProps {
     [key: string]: any
 }
 
+const WRAPPING_LABEL_TYPES = ['checkbox']
+
 const Field: React.FC<FieldProps> = (props) => {
     const { type, label, ...rest } = props
 
@@ -23,7 +25,9 @@ const Field: React.FC<FieldProps> = (props) => {
 
         component = withControlProps(component)
 
-        if (label) {
+        // checkbox uses wrapping label (label wraps the input)
+        // other types use standard label above the input
+        if (label && !WRAPPING_LABEL_TYPES.includes(type)) {
             component = withLabel(component)
         }
 
@@ -31,7 +35,7 @@ const Field: React.FC<FieldProps> = (props) => {
         component = withRequired(component)
 
         return component
-    }, [label])
+    }, [label, type])
 
     return <EnhancedControl type={type} label={label} {...rest} />
 }
