@@ -14,7 +14,8 @@ export const withRequired = <P extends WithRequiredProps>(
         const schemaRequired = useIsFieldRequired(name || '')
         const isRequired = explicitRequired ?? schemaRequired
 
-        return <WrappedComponent {...props} required={isRequired} ref={ref} />
+        // eslint-disable-next-line
+        return <WrappedComponent {...(props as any)} required={isRequired} ref={ref} />
     })
 
     WithRequired.displayName = `withRequired(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`

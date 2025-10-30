@@ -19,8 +19,7 @@ export const phone = (message = 'Invalid phone number') =>
 
 export const url = (message = 'Invalid URL') => z.string().url(message)
 
-export const notZero = (message = 'Must not be zero') =>
-    z.number().refine((v) => v !== 0, message)
+export const notZero = (message = 'Must not be zero') => z.number().refine((v) => v !== 0, message)
 
 export const matchesRegex = (pattern: RegExp, message = 'Invalid format') =>
     z.string().regex(pattern, message)

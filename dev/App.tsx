@@ -70,7 +70,12 @@ const App = () => {
                 <FormField name="email" type="email" label="Email" />
                 <FormField name="website" type="url" label="Website" />
                 <FormField name="age" type="numeric" label="Age" />
-                <FormField name="bio" type="textarea" label="Bio" placeholder="Tell us about yourself" />
+                <FormField
+                    name="bio"
+                    type="textarea"
+                    label="Bio"
+                    placeholder="Tell us about yourself"
+                />
 
                 <h3>Selection</h3>
                 <FormField
