@@ -31,11 +31,13 @@ const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
             onChange(found ? getOptionValue(found) : selectedSerialized)
         }
 
+        const currentValue = value === null ? '' : serializeValue(value)
+
         return (
             <div className="custom-select-input-restarted">
                 <select
                     ref={ref}
-                    value={serializeValue(value)}
+                    value={currentValue}
                     onChange={handleChange}
                     disabled={disabled}
                     className={className}
