@@ -1,5 +1,5 @@
 import React from 'react'
-import { useIsFieldRequired } from '../../validation/useIsFieldRequired'
+import { useIsFieldRequired } from '@/validation/useIsFieldRequired'
 
 interface WithRequiredProps {
     name?: string

@@ -1,5 +1,5 @@
 import React from 'react'
-import FieldMessage from '../FieldMessage'
+import FieldMessage from '@/field/FieldMessage'
 
 interface WithFieldMessageProps {
     errorMessage?: string

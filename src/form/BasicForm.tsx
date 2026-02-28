@@ -1,8 +1,8 @@
 import React from 'react'
 import { FormProvider } from 'react-hook-form'
 import { ZodSchema } from 'zod'
-import { useFormConfig } from '../validation/useFormConfig'
-import { ValidationSchemaContext } from '../validation/ValidationSchemaContext'
+import { useFormConfig } from '@/validation/useFormConfig'
+import { ValidationSchemaContext } from '@/validation/ValidationSchemaContext'
 
 interface BasicFormProps {
     onSubmit: (data: any) => void

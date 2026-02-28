@@ -1,6 +1,6 @@
 import React from 'react'
 import { useController, useFormContext } from 'react-hook-form'
-import { useIsFieldRequired } from '../validation/useIsFieldRequired'
+import { useIsFieldRequired } from '@/validation/useIsFieldRequired'
 import Field from './Field'
 
 interface FormFieldProps {

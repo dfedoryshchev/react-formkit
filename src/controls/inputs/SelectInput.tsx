@@ -5,7 +5,7 @@ import {
     getOptionLabel,
     getOptionValue,
     isUnselected,
-} from '../../utils/select.utils'
+} from '@/utils/select.utils'
 import './SelectInput.scss'
 
 interface SelectInputProps {

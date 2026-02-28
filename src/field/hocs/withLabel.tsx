@@ -1,5 +1,5 @@
 import React from 'react'
-import Label from '../../components/Label'
+import Label from '@/components/Label'
 
 interface WithLabelProps {
     label?: string

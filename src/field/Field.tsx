@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import Control from '../controls/Control'
+import Control from '@/controls/Control'
 import { withLabel } from './hocs/withLabel'
 import { withFieldMessage } from './hocs/withFieldMessage'
 import { withControlProps } from './hocs/withControlProps'

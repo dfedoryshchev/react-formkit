@@ -1,4 +1,4 @@
-import { ControlProps } from '../controls/control.types'
+import { ControlProps } from '@/controls/control.types'
 
 export interface FieldProps extends Omit<ControlProps, 'value' | 'onChange'> {
     name: string
