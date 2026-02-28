@@ -9,18 +9,10 @@ interface FieldMessageProps {
     visible?: boolean
 }
 
-const FieldMessage: React.FC<FieldMessageProps> = ({
-    message,
-    type = 'error',
-    visible = true,
-}) => {
+const FieldMessage: React.FC<FieldMessageProps> = ({ message, type = 'error', visible = true }) => {
     if (!message || !visible) return null
 
-    return (
-        <div className={`custom-field-message custom-field-message--${type}`}>
-            {message}
-        </div>
-    )
+    return <div className={`custom-field-message custom-field-message--${type}`}>{message}</div>
 }
 
 export default FieldMessage
