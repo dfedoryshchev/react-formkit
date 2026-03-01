@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useEffect } from 'react'
+import React, { forwardRef, useState, useCallback } from 'react'
 import { NumericInputProps } from '../control.types'
 import './NumericInput.scss'
 
@@ -8,23 +8,32 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
             value !== undefined ? String(value) : '',
         )
 
-        useEffect(() => {
-            setDisplayValue(value !== undefined ? String(value) : '')
-        }, [value])
-
-        const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            const raw = e.target.value
-            setDisplayValue(raw)
-
-            if (raw === '') {
-                onChange(undefined)
-            } else {
-                const num = Number(raw)
-                if (!isNaN(num)) {
-                    onChange(num)
-                }
+        // sync display when external value changes (e.g. form reset)
+        const currentNumeric = displayValue === '' ? undefined : Number(displayValue)
+        if (value !== currentNumeric && value !== undefined) {
+            if (String(value) !== displayValue) {
+                setDisplayValue(String(value))
             }
+        } else if (value === undefined && displayValue !== '') {
+            setDisplayValue('')
         }
+
+        const handleChange = useCallback(
+            (e: React.ChangeEvent<HTMLInputElement>) => {
+                const raw = e.target.value
+                setDisplayValue(raw)
+
+                if (raw === '') {
+                    onChange(undefined)
+                } else {
+                    const num = Number(raw)
+                    if (!isNaN(num)) {
+                        onChange(num)
+                    }
+                }
+            },
+            [onChange],
+        )
 
         return (
             <div className="custom-numeric-input-restarted">
