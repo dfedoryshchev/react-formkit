@@ -1,7 +1,7 @@
 import React from 'react'
 import { z } from 'zod'
-import BasicForm from '../src/form/BasicForm'
-import FormField from '../src/field/FormField'
+import { BasicForm } from '../src/form'
+import { FormField } from '../src/field'
 
 const schema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -13,7 +13,6 @@ const schema = z.object({
     experience: z.string().min(1, 'Select experience level'),
     startDate: z.string().optional(),
     preferredTime: z.string().optional(),
-    skills: z.array(z.string()).optional(),
     agree: z.boolean(),
 })
 
@@ -28,13 +27,6 @@ const experienceOptions = [
     { value: 'junior', label: 'Junior (0-2 years)' },
     { value: 'mid', label: 'Mid (2-5 years)' },
     { value: 'senior', label: 'Senior (5+ years)' },
-]
-
-const skillOptions = [
-    { value: 'react', label: 'React' },
-    { value: 'typescript', label: 'TypeScript' },
-    { value: 'node', label: 'Node.js' },
-    { value: 'css', label: 'CSS/SCSS' },
 ]
 
 const App = () => {
@@ -61,7 +53,6 @@ const App = () => {
                     experience: '',
                     startDate: '',
                     preferredTime: '',
-                    skills: [],
                     agree: false,
                 }}
             >
