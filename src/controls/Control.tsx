@@ -1,15 +1,7 @@
 import React from 'react'
-import TextInput from './inputs/TextInput'
-import NumericInput from './inputs/NumericInput'
-import TextareaInput from './inputs/TextareaInput'
-import SelectInput from './inputs/SelectInput'
-import CheckboxInput from './inputs/CheckboxInput'
-import EmailInput from './inputs/EmailInput'
-import UrlInput from './inputs/UrlInput'
-import RadioGroup from './toggles/RadioGroup'
-import DateInput from './datetime/DateInput'
-import TimeInput from './datetime/TimeInput'
-import DateTimeInput from './datetime/DateTimeInput'
+import { TextInput, NumericInput, TextareaInput, SelectInput, CheckboxInput, EmailInput, UrlInput } from './inputs'
+import { RadioGroup } from './toggles'
+import { DateInput, TimeInput, DateTimeInput } from './datetime'
 import { Option } from './control.types'
 
 export type ControlType =
