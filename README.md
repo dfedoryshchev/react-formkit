@@ -5,53 +5,58 @@ React + TypeScript form component library built on React Hook Form and Zod.
 ## Architecture
 
 ```
-BasicForm (FormProvider + zodResolver)
-  └─ FormField (useController bridge)
+BasicForm (FormProvider + zodResolver + ValidationSchemaContext)
+  └─ FormField (useController bridge + useIsFieldRequired)
        └─ Field (HOC composition: withRequired → withFieldMessage → withLabel → withControlProps)
             └─ Control (type router)
                  └─ TextInput | NumericInput | SelectInput | CheckboxInput | RadioGroup | ...
 ```
 
-## Available Controls
+## Controls
 
-| Type | Component | Description |
-|------|-----------|-------------|
-| `text` | TextInput | Standard text input |
-| `numeric` | NumericInput | Number input with empty value handling |
-| `textarea` | TextareaInput | Multi-line text |
-| `select` | SelectInput | Dropdown with typed options and serialization |
-| `checkbox` | CheckboxInput | Boolean checkbox |
-| `radio` | RadioGroup | Radio button group |
-| `email` | EmailInput | Email-specific input |
-| `url` | UrlInput | URL input |
-| `date` | DateInput | Date picker |
-| `time` | TimeInput | Time picker |
-| `datetime` | DateTimeInput | Date + time picker |
+| Type            | Component     | Description                                   |
+| --------------- | ------------- | --------------------------------------------- |
+| `text`          | TextInput     | Standard text input                           |
+| `numeric`       | NumericInput  | Number input with empty value handling        |
+| `textarea`      | TextareaInput | Multi-line text                               |
+| `select`        | SelectInput   | Dropdown with typed options and serialization |
+| `checkbox`      | CheckboxInput | Boolean checkbox                              |
+| `radio`         | RadioGroup    | Radio button group                            |
+| `email`         | EmailInput    | Email input                                   |
+| `url`           | UrlInput      | URL input                                     |
+| `date`          | DateInput     | Date picker                                   |
+| `time`          | TimeInput     | Time picker                                   |
+| `datetime`      | DateTimeInput | Date + time picker                            |
+| `checkboxGroup` | CheckboxGroup | Multi-select checkboxes                       |
 
 ## Validation
 
-Built-in validators using Zod:
+Zod-based validators:
 
 ```tsx
-import { required, email, minLength } from './validation/validators/common.validators'
-import { positive, between } from './validation/validators/number.validators'
-import { latinOnly } from './validation/validators/charset.validators'
+// common
+import { required, email, minLength, maxLength, phone, url } from '@/validation'
+
+// numbers
+import { positive, between, integer, percentage } from '@/validation'
+
+// charset
+import { latinOnly, cyrillicOnly, digitsOnly } from '@/validation'
 ```
 
-Schema-driven required field detection via `useIsFieldRequired` — fields with `.describe('required')` or `min(1)` automatically show the required indicator.
+Schema-driven required field detection — fields with `.describe('required')` or `min(1)` automatically show the required indicator via `useIsFieldRequired`.
 
 ## Usage
 
 ```tsx
-import BasicForm from './form/BasicForm'
-import FormField from './field/FormField'
+import { BasicForm } from './form'
+import { FormField } from './field'
 import { z } from 'zod'
 
 const schema = z.object({
     name: z.string().min(2, 'Too short'),
     email: z.string().email(),
     role: z.string().min(1, 'Required'),
-    agree: z.boolean(),
 })
 
 const MyForm = () => (
@@ -59,7 +64,6 @@ const MyForm = () => (
         <FormField name="name" type="text" label="Name" />
         <FormField name="email" type="email" label="Email" />
         <FormField name="role" type="select" label="Role" options={roleOptions} />
-        <FormField name="agree" type="checkbox" label="I agree" />
         <button type="submit">Submit</button>
     </BasicForm>
 )
@@ -74,4 +78,4 @@ npm run dev
 
 ## Status
 
-Active development. Core form system, validation, and base controls are functional. Upcoming: tests, additional controls, monorepo split.
+Active development. Core form system, validation, and base controls are functional.
