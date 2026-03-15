@@ -1,4 +1,10 @@
-export interface BaseInputProps {
+export interface AriaInputProps {
+    'aria-required'?: boolean
+    'aria-invalid'?: boolean
+    'aria-describedby'?: string
+}
+
+export interface BaseInputProps extends AriaInputProps {
     value: string
     onChange: (value: string) => void
     placeholder?: string
@@ -6,7 +12,7 @@ export interface BaseInputProps {
     className?: string
 }
 
-export interface NumericInputProps {
+export interface NumericInputProps extends AriaInputProps {
     value: number | undefined
     onChange: (value: number | undefined) => void
     placeholder?: string

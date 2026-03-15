@@ -3,7 +3,7 @@ import { BaseInputProps } from '../control.types'
 import './UrlInput.scss'
 
 const UrlInput = forwardRef<HTMLInputElement, BaseInputProps>(
-    ({ value, onChange, placeholder, disabled, className }, ref) => {
+    ({ value, onChange, placeholder, disabled, className, ...rest }, ref) => {
         return (
             <div className="custom-url-input">
                 <input
@@ -14,6 +14,7 @@ const UrlInput = forwardRef<HTMLInputElement, BaseInputProps>(
                     placeholder={placeholder || 'https://'}
                     disabled={disabled}
                     className={className}
+                    {...rest}
                 />
             </div>
         )

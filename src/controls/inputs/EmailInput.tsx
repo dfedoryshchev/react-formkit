@@ -3,7 +3,7 @@ import { BaseInputProps } from '../control.types'
 import './EmailInput.scss'
 
 const EmailInput = forwardRef<HTMLInputElement, BaseInputProps>(
-    ({ value, onChange, placeholder, disabled, className }, ref) => {
+    ({ value, onChange, placeholder, disabled, className, ...rest }, ref) => {
         return (
             <div className="custom-email-input">
                 <input
@@ -14,6 +14,7 @@ const EmailInput = forwardRef<HTMLInputElement, BaseInputProps>(
                     placeholder={placeholder || 'email@example.com'}
                     disabled={disabled}
                     className={className}
+                    {...rest}
                 />
             </div>
         )

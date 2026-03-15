@@ -3,7 +3,7 @@ import { NumericInputProps } from '../control.types'
 import './NumericInput.scss'
 
 const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
-    ({ value, onChange, placeholder, disabled }, ref) => {
+    ({ value, onChange, placeholder, disabled, ...rest }, ref) => {
         const [displayValue, setDisplayValue] = useState<string>(
             value !== undefined ? String(value) : '',
         )
@@ -45,6 +45,7 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
                     onChange={handleChange}
                     placeholder={placeholder}
                     disabled={disabled}
+                    {...rest}
                 />
             </div>
         )

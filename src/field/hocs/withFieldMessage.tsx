@@ -9,14 +9,24 @@ interface WithFieldMessageProps {
 export const withFieldMessage = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
     const WithFieldMessage = React.forwardRef<unknown, P & WithFieldMessageProps>((props, ref) => {
         const { errorMessage, warningMessage, ...rest } = props as any
+        const message = errorMessage || warningMessage
+        const name = rest.name as string | undefined
+        const messageId = name ? `field-message-${name}` : undefined
 
         return (
             <>
-                <WrappedComponent {...(rest as P)} ref={ref} />
+                <WrappedComponent
+                    {...(rest as P)}
+                    aria-required={rest.required ? true : undefined}
+                    aria-invalid={errorMessage ? true : undefined}
+                    aria-describedby={message && messageId ? messageId : undefined}
+                    ref={ref}
+                />
                 <FieldMessage
-                    message={errorMessage || warningMessage}
+                    id={messageId}
+                    message={message}
                     type={errorMessage ? 'error' : 'warning'}
-                    visible={!!(errorMessage || warningMessage)}
+                    visible={!!message}
                 />
             </>
         )

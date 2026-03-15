@@ -3,7 +3,7 @@ import { BaseInputProps } from '../control.types'
 import './TextInput.scss'
 
 const TextInput = forwardRef<HTMLInputElement, BaseInputProps>(
-    ({ value, onChange, placeholder, disabled, className }, ref) => {
+    ({ value, onChange, placeholder, disabled, className, ...rest }, ref) => {
         return (
             <div className="custom-text-input-restarted">
                 <input
@@ -14,6 +14,7 @@ const TextInput = forwardRef<HTMLInputElement, BaseInputProps>(
                     placeholder={placeholder}
                     disabled={disabled}
                     className={className}
+                    {...rest}
                 />
             </div>
         )

@@ -1,7 +1,8 @@
 import React, { forwardRef } from 'react'
+import { AriaInputProps } from '../control.types'
 import './TextareaInput.scss'
 
-interface TextareaInputProps {
+interface TextareaInputProps extends AriaInputProps {
     value: string
     onChange: (value: string) => void
     placeholder?: string
@@ -11,7 +12,7 @@ interface TextareaInputProps {
 }
 
 const TextareaInput = forwardRef<HTMLTextAreaElement, TextareaInputProps>(
-    ({ value, onChange, placeholder, disabled, rows = 3, className }, ref) => {
+    ({ value, onChange, placeholder, disabled, rows = 3, className, ...rest }, ref) => {
         return (
             <div className="custom-textarea-input-restarted">
                 <textarea
@@ -22,6 +23,7 @@ const TextareaInput = forwardRef<HTMLTextAreaElement, TextareaInputProps>(
                     disabled={disabled}
                     rows={rows}
                     className={className}
+                    {...rest}
                 />
             </div>
         )
