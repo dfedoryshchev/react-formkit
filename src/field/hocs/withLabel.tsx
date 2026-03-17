@@ -15,7 +15,7 @@ export const withLabel = <P extends WithLabelProps>(WrappedComponent: React.Comp
         }
 
         return (
-            <Label text={label} required={required}>
+            <Label text={label} required={required} htmlFor={rest.name}>
                 <WrappedComponent {...(rest as P)} ref={ref} />
             </Label>
         )
