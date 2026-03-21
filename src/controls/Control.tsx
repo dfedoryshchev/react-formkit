@@ -17,74 +17,104 @@ export type ControlType =
     | 'time'
     | 'datetime'
 
-interface BaseControlProps {
-    type: ControlType
-    value: any
-    onChange: (value: any) => void
+interface CommonControlProps {
     placeholder?: string
     disabled?: boolean
     className?: string
     name?: string
+    id?: string
 }
 
-interface SelectControlProps extends BaseControlProps {
+interface TextControlProps extends CommonControlProps {
+    type: 'text'
+    value: string
+    onChange: (value: string) => void
+}
+
+interface NumericControlProps extends CommonControlProps {
+    type: 'numeric'
+    value: number | undefined
+    onChange: (value: number | undefined) => void
+}
+
+interface SelectControlProps extends CommonControlProps {
     type: 'select'
+    value: unknown
+    onChange: (value: unknown) => void
     options: Option[]
 }
 
-interface CheckboxControlProps extends BaseControlProps {
-    type: 'checkbox'
+// TODO: tighten the remaining control prop types (textarea, checkbox, radio,
+// email, url, date, time, datetime) the way text/numeric/select now are.
+interface LooseControlProps extends CommonControlProps {
+    type: 'textarea' | 'checkbox' | 'radio' | 'email' | 'url' | 'date' | 'time' | 'datetime'
+    value: any
+    onChange: (value: any) => void
+    options?: Option[]
     label?: string
 }
 
-interface RadioControlProps extends BaseControlProps {
-    type: 'radio'
-    options: { value: string; label: string }[]
-}
+type ControlProps = TextControlProps | NumericControlProps | SelectControlProps | LooseControlProps
 
-type ControlProps = SelectControlProps | CheckboxControlProps | RadioControlProps | BaseControlProps
-
-const Control: React.FC<ControlProps> = ({ type, ...rest }) => {
-    switch (type) {
-        case 'text':
+const Control: React.FC<ControlProps> = (props) => {
+    switch (props.type) {
+        case 'text': {
+            const { type, ...rest } = props
             return <TextInput {...rest} />
-        case 'numeric':
+        }
+        case 'numeric': {
+            const { type, ...rest } = props
             return <NumericInput {...rest} />
-        case 'textarea':
-            return <TextareaInput {...rest} />
-        case 'select':
-            return <SelectInput {...(rest as any)} />
+        }
+        case 'select': {
+            const { type, ...rest } = props
+            return <SelectInput {...rest} />
+        }
+        case 'textarea': {
+            const { type, ...rest } = props
+            return <TextareaInput {...(rest as any)} />
+        }
         case 'checkbox':
             return (
                 <CheckboxInput
-                    checked={!!rest.value}
-                    onChange={rest.onChange}
-                    label={(rest as any).label}
-                    disabled={rest.disabled}
+                    checked={!!props.value}
+                    onChange={props.onChange}
+                    label={props.label}
+                    disabled={props.disabled}
                 />
             )
         case 'radio':
             return (
                 <RadioGroup
-                    value={rest.value}
-                    onChange={rest.onChange}
-                    options={(rest as any).options}
-                    name={rest.name || ''}
-                    disabled={rest.disabled}
+                    value={props.value}
+                    onChange={props.onChange}
+                    options={(props.options ?? []) as any}
+                    name={props.name || ''}
+                    disabled={props.disabled}
                 />
             )
-        case 'email':
-            return <EmailInput {...rest} />
-        case 'url':
-            return <UrlInput {...rest} />
-        case 'date':
-            return <DateInput {...rest} />
-        case 'time':
-            return <TimeInput {...rest} />
-        case 'datetime':
-            return <DateTimeInput {...rest} />
+        case 'email': {
+            const { type, ...rest } = props
+            return <EmailInput {...(rest as any)} />
+        }
+        case 'url': {
+            const { type, ...rest } = props
+            return <UrlInput {...(rest as any)} />
+        }
+        case 'date': {
+            const { type, ...rest } = props
+            return <DateInput {...(rest as any)} />
+        }
+        case 'time': {
+            const { type, ...rest } = props
+            return <TimeInput {...(rest as any)} />
+        }
+        case 'datetime': {
+            const { type, ...rest } = props
+            return <DateTimeInput {...(rest as any)} />
+        }
         default:
-            return <TextInput {...rest} />
+            return <TextInput {...(props as any)} />
     }
 }
 
