@@ -1,6 +1,6 @@
 import React from 'react'
 import { TextInput, NumericInput, TextareaInput, SelectInput, CheckboxInput, EmailInput, UrlInput } from './inputs'
-import { RadioGroup } from './toggles'
+import { RadioGroup, CheckboxGroup } from './toggles'
 import { DateInput, TimeInput, DateTimeInput } from './datetime'
 import { Option } from './control.types'
 
@@ -16,6 +16,7 @@ export type ControlType =
     | 'date'
     | 'time'
     | 'datetime'
+    | 'checkbox-group'
 
 interface CommonControlProps {
     placeholder?: string
@@ -47,7 +48,16 @@ interface SelectControlProps extends CommonControlProps {
 // TODO: tighten the remaining control prop types (textarea, checkbox, radio,
 // email, url, date, time, datetime) the way text/numeric/select now are.
 interface LooseControlProps extends CommonControlProps {
-    type: 'textarea' | 'checkbox' | 'radio' | 'email' | 'url' | 'date' | 'time' | 'datetime'
+    type:
+        | 'textarea'
+        | 'checkbox'
+        | 'radio'
+        | 'email'
+        | 'url'
+        | 'date'
+        | 'time'
+        | 'datetime'
+        | 'checkbox-group'
     value: any
     onChange: (value: any) => void
     options?: Option[]
@@ -90,6 +100,15 @@ const Control: React.FC<ControlProps> = (props) => {
                     onChange={props.onChange}
                     options={(props.options ?? []) as any}
                     name={props.name || ''}
+                    disabled={props.disabled}
+                />
+            )
+        case 'checkbox-group':
+            return (
+                <CheckboxGroup
+                    value={(props.value ?? []) as string[]}
+                    onChange={props.onChange}
+                    options={(props.options ?? []) as any}
                     disabled={props.disabled}
                 />
             )
