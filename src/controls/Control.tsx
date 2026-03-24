@@ -89,7 +89,6 @@ const Control: React.FC<ControlProps> = (props) => {
                 <CheckboxInput
                     checked={!!props.value}
                     onChange={props.onChange}
-                    label={props.label}
                     disabled={props.disabled}
                 />
             )

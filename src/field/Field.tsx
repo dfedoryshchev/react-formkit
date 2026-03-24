@@ -4,6 +4,7 @@ import { withLabel } from './hocs/withLabel'
 import { withFieldMessage } from './hocs/withFieldMessage'
 import { withControlProps } from './hocs/withControlProps'
 import { withRequired } from './hocs/withRequired'
+import { withWrappingLabel } from '@/controls/toggles'
 
 interface FieldProps {
     type: string
@@ -25,10 +26,14 @@ const Field: React.FC<FieldProps> = (props) => {
 
         component = withControlProps(component)
 
-        // checkbox uses wrapping label (label wraps the input)
-        // other types use standard label above the input
-        if (label && !WRAPPING_LABEL_TYPES.includes(type)) {
-            component = withLabel(component)
+        // checkbox-style inputs wrap the label around the control (click text to
+        // toggle); other types render a standard label above the control
+        if (label) {
+            if (WRAPPING_LABEL_TYPES.includes(type)) {
+                component = withWrappingLabel(component)
+            } else {
+                component = withLabel(component)
+            }
         }
 
         component = withFieldMessage(component)
