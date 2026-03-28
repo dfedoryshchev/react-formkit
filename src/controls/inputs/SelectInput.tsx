@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useEffect } from 'react'
 import { Option } from '../control.types'
 import {
     serializeValue,
@@ -15,10 +15,19 @@ interface SelectInputProps {
     placeholder?: string
     disabled?: boolean
     className?: string
+    // opt-in: pre-select the first option when there is no placeholder and no
+    // current value. Off by default so a form never starts with an unchosen value.
+    autoSelectFirst?: boolean
 }
 
 const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
-    ({ value, onChange, options, placeholder, disabled, className }, ref) => {
+    ({ value, onChange, options, placeholder, disabled, className, autoSelectFirst = false }, ref) => {
+        useEffect(() => {
+            if (autoSelectFirst && !placeholder && isUnselected(value) && options.length > 0) {
+                onChange(getOptionValue(options[0]))
+            }
+        }, [autoSelectFirst, placeholder, value, options, onChange])
+
         const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
             const selectedSerialized = e.target.value
             if (isUnselected(selectedSerialized)) {
