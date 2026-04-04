@@ -1,6 +1,6 @@
 import React from 'react'
 import { z } from 'zod'
-import { BasicForm } from '../src/form'
+import { Form } from '../src/form'
 import { FormField } from '../src/field'
 
 const schema = z.object({
@@ -30,7 +30,9 @@ const experienceOptions = [
 ]
 
 const App = () => {
-    const handleSubmit = (data: any) => {
+    const handleSubmit = async (data: any) => {
+        // simulate a request so the submit button shows its loading state
+        await new Promise((resolve) => setTimeout(resolve, 1200))
         console.log('Form submitted:', data)
         alert(JSON.stringify(data, null, 2))
     }
@@ -40,7 +42,8 @@ const App = () => {
             <h1>react-formkit dev</h1>
             <p style={{ color: '#666', marginBottom: 24 }}>All available controls</p>
 
-            <BasicForm
+            <Form
+                buttonLabel="Submit"
                 onSubmit={handleSubmit}
                 validationSchema={schema}
                 defaultValues={{
@@ -90,12 +93,7 @@ const App = () => {
                 <h3>Toggles</h3>
                 <FormField name="agree" type="checkbox" label="I agree to the terms" />
 
-                <div style={{ marginTop: 24 }}>
-                    <button type="submit" style={{ padding: '10px 24px', fontSize: 14 }}>
-                        Submit
-                    </button>
-                </div>
-            </BasicForm>
+            </Form>
         </div>
     )
 }
