@@ -1,5 +1,7 @@
 export { ValidationSchemaContext, useValidationSchema } from './ValidationSchemaContext'
 export { useFormConfig } from './useFormConfig'
+export { useFormLevelValidators } from './useFormLevelValidators'
+export type { FormLevelValidator } from './useFormLevelValidators'
 export { useIsFieldRequired } from './useIsFieldRequired'
 export * from './validators/common.validators'
 export * from './validators/number.validators'
