@@ -1,6 +1,6 @@
 import React from 'react'
 import { z } from 'zod'
-import { Form } from '../src/form'
+import { Form, BasicForm } from '../src/form'
 import { FormField } from '../src/field'
 
 const schema = z.object({
@@ -27,6 +27,19 @@ const experienceOptions = [
     { value: 'junior', label: 'Junior (0-2 years)' },
     { value: 'mid', label: 'Mid (2-5 years)' },
     { value: 'senior', label: 'Senior (5+ years)' },
+]
+
+const passwordSchema = z.object({
+    password: z.string().min(6, 'At least 6 characters'),
+    confirmPassword: z.string().min(1, 'Confirm your password'),
+})
+
+const passwordMatchValidators = [
+    {
+        refinement: (data: any) => data.password === data.confirmPassword,
+        message: 'Passwords do not match',
+        path: ['confirmPassword'],
+    },
 ]
 
 const App = () => {
@@ -94,6 +107,23 @@ const App = () => {
                 <FormField name="agree" type="checkbox" label="I agree to the terms" />
 
             </Form>
+
+            <h2 style={{ marginTop: 48 }}>Cross-field validation</h2>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+                Confirm-password must match password (form-level validator).
+            </p>
+            <BasicForm
+                onSubmit={(data) => alert(JSON.stringify(data, null, 2))}
+                validationSchema={passwordSchema}
+                defaultValues={{ password: '', confirmPassword: '' }}
+                formLevelValidators={passwordMatchValidators}
+            >
+                <FormField name="password" type="text" label="Password" />
+                <FormField name="confirmPassword" type="text" label="Confirm password" />
+                <button type="submit" style={{ marginTop: 16, padding: '8px 20px', fontSize: 14 }}>
+                    Change password
+                </button>
+            </BasicForm>
         </div>
     )
 }

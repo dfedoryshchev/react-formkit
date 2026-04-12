@@ -2,6 +2,7 @@ import React from 'react'
 import { FormProvider } from 'react-hook-form'
 import { ZodSchema } from 'zod'
 import { useFormConfig } from '@/validation/useFormConfig'
+import { FormLevelValidator } from '@/validation/useFormLevelValidators'
 import { ValidationSchemaContext } from '@/validation/ValidationSchemaContext'
 
 interface BasicFormProps {
@@ -11,6 +12,7 @@ interface BasicFormProps {
     children: React.ReactNode
     resetOnSubmit?: boolean
     loadingOverlay?: boolean
+    formLevelValidators?: FormLevelValidator[]
 }
 
 const BasicForm: React.FC<BasicFormProps> = ({
@@ -20,8 +22,9 @@ const BasicForm: React.FC<BasicFormProps> = ({
     children,
     resetOnSubmit,
     loadingOverlay,
+    formLevelValidators,
 }) => {
-    const methods = useFormConfig({ validationSchema, defaultValues })
+    const methods = useFormConfig({ validationSchema, defaultValues, formLevelValidators })
 
     const handleSubmit = async (data: any) => {
         await onSubmit(data)
