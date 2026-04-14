@@ -1,6 +1,6 @@
 import React from 'react'
 import { TextInput, NumericInput, TextareaInput, SelectInput, CheckboxInput, EmailInput, UrlInput } from './inputs'
-import { RadioGroup, CheckboxGroup } from './toggles'
+import { RadioGroup, CheckboxGroup, SwitchInput } from './toggles'
 import { DateInput, TimeInput, DateTimeInput } from './datetime'
 import { Option } from './control.types'
 
@@ -17,6 +17,7 @@ export type ControlType =
     | 'time'
     | 'datetime'
     | 'checkbox-group'
+    | 'switch'
 
 interface CommonControlProps {
     placeholder?: string
@@ -58,6 +59,7 @@ interface LooseControlProps extends CommonControlProps {
         | 'time'
         | 'datetime'
         | 'checkbox-group'
+        | 'switch'
     value: any
     onChange: (value: any) => void
     options?: Option[]
@@ -108,6 +110,14 @@ const Control: React.FC<ControlProps> = (props) => {
                     value={(props.value ?? []) as string[]}
                     onChange={props.onChange}
                     options={(props.options ?? []) as any}
+                    disabled={props.disabled}
+                />
+            )
+        case 'switch':
+            return (
+                <SwitchInput
+                    checked={!!props.value}
+                    onChange={props.onChange}
                     disabled={props.disabled}
                 />
             )

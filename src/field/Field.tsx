@@ -16,7 +16,7 @@ interface FieldProps {
     [key: string]: any
 }
 
-const WRAPPING_LABEL_TYPES = ['checkbox']
+const WRAPPING_LABEL_TYPES = ['checkbox', 'switch']
 
 const Field: React.FC<FieldProps> = (props) => {
     const { type, label, ...rest } = props

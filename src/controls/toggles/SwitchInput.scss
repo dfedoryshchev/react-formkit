@@ -1,0 +1,46 @@
+.switch-wrapper {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+}
+
+.switch-input-hidden {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-track {
+    width: 40px;
+    height: 22px;
+    background: #ccc;
+    border-radius: 11px;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.switch-input-hidden:checked + .switch-track {
+    background: #485fc7;
+}
+
+.switch-thumb {
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s;
+}
+
+.switch-input-hidden:checked + .switch-track .switch-thumb {
+    transform: translateX(18px);
+}
+
+.switch-input-hidden:disabled + .switch-track {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
