@@ -1,5 +1,5 @@
 import React from 'react'
-import { TextInput, NumericInput, TextareaInput, SelectInput, CheckboxInput, EmailInput, UrlInput } from './inputs'
+import { TextInput, NumericInput, TextareaInput, SelectInput, CheckboxInput, EmailInput, UrlInput, PasswordInput } from './inputs'
 import { RadioGroup, CheckboxGroup, SwitchInput } from './toggles'
 import { DateInput, TimeInput, DateTimeInput } from './datetime'
 import { Option } from './control.types'
@@ -18,6 +18,7 @@ export type ControlType =
     | 'datetime'
     | 'checkbox-group'
     | 'switch'
+    | 'password'
 
 interface CommonControlProps {
     placeholder?: string
@@ -60,6 +61,7 @@ interface LooseControlProps extends CommonControlProps {
         | 'datetime'
         | 'checkbox-group'
         | 'switch'
+        | 'password'
     value: any
     onChange: (value: any) => void
     options?: Option[]
@@ -128,6 +130,10 @@ const Control: React.FC<ControlProps> = (props) => {
         case 'url': {
             const { type, ...rest } = props
             return <UrlInput {...(rest as any)} />
+        }
+        case 'password': {
+            const { type, ...rest } = props
+            return <PasswordInput {...(rest as any)} />
         }
         case 'date': {
             const { type, ...rest } = props
