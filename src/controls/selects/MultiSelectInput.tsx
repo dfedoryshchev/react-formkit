@@ -10,11 +10,6 @@ interface MultiSelectInputProps {
     isDisabled?: boolean
 }
 
-// POC: first pass at wiring react-select for multi-value selection. Value
-// mapping is NOT handled yet - react-select works in terms of {label,value}
-// option objects, but the form stores raw values. Selected chips will not
-// reflect stored values and onChange will emit option objects rather than raw
-// values. Addressed in follow-ups.
 const MultiSelectInput: React.FC<MultiSelectInputProps> = ({
     value,
     onChange,
@@ -22,10 +17,16 @@ const MultiSelectInput: React.FC<MultiSelectInputProps> = ({
     placeholder,
     isDisabled,
 }) => {
+    // options now map to react-select's {label,value} shape...
+    const reactSelectOptions = options.map((o) => ({ label: o.label, value: o.value }))
+
     return (
         <Select
             isMulti
-            options={options as any}
+            options={reactSelectOptions as any}
+            // FIXME: value is raw string[] but react-select expects the matching
+            // option objects, so selected chips do not render; and onChange emits
+            // option objects rather than raw values. Value mapping still TODO.
             value={value as any}
             onChange={(selected: any) => onChange(selected)}
             placeholder={placeholder}

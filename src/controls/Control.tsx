@@ -1,6 +1,7 @@
 import React from 'react'
 import { TextInput, NumericInput, TextareaInput, SelectInput, CheckboxInput, EmailInput, UrlInput, PasswordInput } from './inputs'
 import { RadioGroup, CheckboxGroup, SwitchInput } from './toggles'
+import { MultiSelectInput } from './selects'
 import { DateInput, TimeInput, DateTimeInput } from './datetime'
 import { Option } from './control.types'
 
@@ -19,6 +20,7 @@ export type ControlType =
     | 'checkbox-group'
     | 'switch'
     | 'password'
+    | 'multiselect'
 
 interface CommonControlProps {
     placeholder?: string
@@ -62,6 +64,7 @@ interface LooseControlProps extends CommonControlProps {
         | 'checkbox-group'
         | 'switch'
         | 'password'
+        | 'multiselect'
     value: any
     onChange: (value: any) => void
     options?: Option[]
@@ -121,6 +124,16 @@ const Control: React.FC<ControlProps> = (props) => {
                     checked={!!props.value}
                     onChange={props.onChange}
                     disabled={props.disabled}
+                />
+            )
+        case 'multiselect':
+            return (
+                <MultiSelectInput
+                    value={(props.value ?? []) as string[]}
+                    onChange={props.onChange}
+                    options={(props.options ?? []) as any}
+                    placeholder={props.placeholder}
+                    isDisabled={props.disabled}
                 />
             )
         case 'email': {
