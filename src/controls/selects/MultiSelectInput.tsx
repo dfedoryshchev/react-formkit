@@ -1,6 +1,7 @@
 import React from 'react'
-import Select from 'react-select'
+import Select, { MultiValue } from 'react-select'
 import { Option } from '../control.types'
+import { serializeValue, getOptionValue, getOptionLabel } from '../utils/select.utils'
 
 interface MultiSelectInputProps {
     value: string[]
@@ -10,6 +11,8 @@ interface MultiSelectInputProps {
     isDisabled?: boolean
 }
 
+type RSOption = { label: string; value: unknown }
+
 const MultiSelectInput: React.FC<MultiSelectInputProps> = ({
     value,
     onChange,
@@ -17,18 +20,28 @@ const MultiSelectInput: React.FC<MultiSelectInputProps> = ({
     placeholder,
     isDisabled,
 }) => {
-    // options now map to react-select's {label,value} shape...
-    const reactSelectOptions = options.map((o) => ({ label: o.label, value: o.value }))
+    const reactSelectOptions: RSOption[] = options.map((o) => ({
+        label: getOptionLabel(o),
+        value: getOptionValue(o),
+    }))
+
+    // Map stored raw values back to react-select option objects by serialized
+    // match. TODO: this serialize-compare workaround is not the clean fix - it
+    // round-trips values through strings. A proper value<->option model is owed.
+    const selected = (value ?? [])
+        .map((v) => reactSelectOptions.find((o) => serializeValue(o.value) === serializeValue(v)))
+        .filter(Boolean) as RSOption[]
+
+    const handleChange = (next: MultiValue<RSOption>) => {
+        onChange(next.map((o) => o.value) as string[])
+    }
 
     return (
         <Select
             isMulti
             options={reactSelectOptions as any}
-            // FIXME: value is raw string[] but react-select expects the matching
-            // option objects, so selected chips do not render; and onChange emits
-            // option objects rather than raw values. Value mapping still TODO.
-            value={value as any}
-            onChange={(selected: any) => onChange(selected)}
+            value={selected as any}
+            onChange={(next) => handleChange(next as MultiValue<RSOption>)}
             placeholder={placeholder}
             isDisabled={isDisabled}
         />
