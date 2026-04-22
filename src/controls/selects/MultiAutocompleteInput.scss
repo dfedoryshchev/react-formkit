@@ -1,0 +1,40 @@
+.custom-multi-autocomplete {
+    border: 1px solid #dbdbdb;
+    border-radius: 4px;
+    padding: 6px;
+
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 4px;
+    }
+
+    &__tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #eef1fb;
+        color: #485fc7;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 13px;
+
+        button {
+            border: none;
+            background: none;
+            color: #485fc7;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+    }
+
+    input {
+        width: 100%;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        padding: 2px;
+    }
+}

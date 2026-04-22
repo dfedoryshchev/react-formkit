@@ -1,7 +1,7 @@
 import React from 'react'
 import { TextInput, NumericInput, TextareaInput, SelectInput, CheckboxInput, EmailInput, UrlInput, PasswordInput } from './inputs'
 import { RadioGroup, CheckboxGroup, SwitchInput } from './toggles'
-import { MultiSelectInput } from './selects'
+import { MultiSelectInput, AutocompleteInput, MultiAutocompleteInput } from './selects'
 import { DateInput, TimeInput, DateTimeInput } from './datetime'
 import { Option } from './control.types'
 
@@ -21,6 +21,8 @@ export type ControlType =
     | 'switch'
     | 'password'
     | 'multiselect'
+    | 'autocomplete'
+    | 'multi-autocomplete'
 
 interface CommonControlProps {
     placeholder?: string
@@ -65,6 +67,8 @@ interface LooseControlProps extends CommonControlProps {
         | 'switch'
         | 'password'
         | 'multiselect'
+        | 'autocomplete'
+        | 'multi-autocomplete'
     value: any
     onChange: (value: any) => void
     options?: Option[]
@@ -134,6 +138,19 @@ const Control: React.FC<ControlProps> = (props) => {
                     options={(props.options ?? []) as any}
                     placeholder={props.placeholder}
                     isDisabled={props.disabled}
+                />
+            )
+        case 'autocomplete': {
+            const { type, ...rest } = props
+            return <AutocompleteInput {...(rest as any)} />
+        }
+        case 'multi-autocomplete':
+            return (
+                <MultiAutocompleteInput
+                    value={(props.value ?? []) as string[]}
+                    onChange={props.onChange}
+                    placeholder={props.placeholder}
+                    disabled={props.disabled}
                 />
             )
         case 'email': {
