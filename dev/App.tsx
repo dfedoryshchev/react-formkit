@@ -14,6 +14,13 @@ const schema = z.object({
     startDate: z.string().optional(),
     preferredTime: z.string().optional(),
     agree: z.boolean(),
+    notifications: z.boolean(),
+    accountPassword: z.string().min(6, 'At least 6 characters'),
+    skills: z.array(z.string()).optional(),
+    interests: z.array(z.string()).optional(),
+    city: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    phone: z.string().optional(),
 })
 
 const roleOptions = [
@@ -28,6 +35,21 @@ const experienceOptions = [
     { value: 'mid', label: 'Mid (2-5 years)' },
     { value: 'senior', label: 'Senior (5+ years)' },
 ]
+
+const skillOptions = [
+    { value: 'react', label: 'React' },
+    { value: 'ts', label: 'TypeScript' },
+    { value: 'node', label: 'Node.js' },
+    { value: 'css', label: 'CSS' },
+]
+
+const interestOptions = [
+    { value: 'oss', label: 'Open Source' },
+    { value: 'design', label: 'Design' },
+    { value: 'devops', label: 'DevOps' },
+]
+
+const citySuggestions = ['Edinburgh', 'Glasgow', 'London', 'Manchester']
 
 const passwordSchema = z.object({
     password: z.string().min(6, 'At least 6 characters'),
@@ -70,6 +92,13 @@ const App = () => {
                     startDate: '',
                     preferredTime: '',
                     agree: false,
+                    notifications: false,
+                    accountPassword: '',
+                    skills: [],
+                    interests: [],
+                    city: '',
+                    tags: [],
+                    phone: '',
                 }}
             >
                 <h3>Text inputs</h3>
@@ -105,7 +134,37 @@ const App = () => {
 
                 <h3>Toggles</h3>
                 <FormField name="agree" type="checkbox" label="I agree to the terms" />
+                <FormField name="notifications" type="switch" label="Enable notifications" />
 
+                <h3>Advanced</h3>
+                <FormField name="accountPassword" type="password" label="Password" />
+                <FormField
+                    name="skills"
+                    type="multiselect"
+                    label="Skills"
+                    options={skillOptions}
+                    placeholder="Pick skills"
+                />
+                <FormField
+                    name="interests"
+                    type="checkbox-group"
+                    label="Interests"
+                    options={interestOptions}
+                />
+                <FormField
+                    name="city"
+                    type="autocomplete"
+                    label="City"
+                    suggestions={citySuggestions}
+                    placeholder="Start typing"
+                />
+                <FormField
+                    name="tags"
+                    type="multi-autocomplete"
+                    label="Tags"
+                    placeholder="Type and press Enter"
+                />
+                <FormField name="phone" type="phone" label="Phone" />
             </Form>
 
             <h2 style={{ marginTop: 48 }}>Cross-field validation</h2>
