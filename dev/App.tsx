@@ -21,6 +21,7 @@ const schema = z.object({
     city: z.string().optional(),
     tags: z.array(z.string()).optional(),
     phone: z.string().optional(),
+    appointment: z.string().optional(),
 })
 
 const roleOptions = [
@@ -99,6 +100,7 @@ const App = () => {
                     city: '',
                     tags: [],
                     phone: '',
+                    appointment: '',
                 }}
             >
                 <h3>Text inputs</h3>
@@ -129,8 +131,15 @@ const App = () => {
                 />
 
                 <h3>Date &amp; Time</h3>
-                <FormField name="startDate" type="date" label="Start Date" />
+                <FormField
+                    name="startDate"
+                    type="date"
+                    label="Start Date"
+                    min="2026-01-01"
+                    max="2026-12-31"
+                />
                 <FormField name="preferredTime" type="time" label="Preferred Time" />
+                <FormField name="appointment" type="datetime" label="Appointment" />
 
                 <h3>Toggles</h3>
                 <FormField name="agree" type="checkbox" label="I agree to the terms" />
