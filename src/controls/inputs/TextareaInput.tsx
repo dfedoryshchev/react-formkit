@@ -14,7 +14,7 @@ interface TextareaInputProps extends AriaInputProps {
 const TextareaInput = forwardRef<HTMLTextAreaElement, TextareaInputProps>(
     ({ value, onChange, placeholder, disabled, rows = 3, className, ...rest }, ref) => {
         return (
-            <div className="custom-textarea-input-restarted">
+            <div className="custom-textarea-input">
                 <textarea
                     ref={ref}
                     value={value || ''}

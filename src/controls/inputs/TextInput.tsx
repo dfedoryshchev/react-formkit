@@ -5,7 +5,7 @@ import './TextInput.scss'
 const TextInput = forwardRef<HTMLInputElement, BaseInputProps>(
     ({ value, onChange, placeholder, disabled, className, ...rest }, ref) => {
         return (
-            <div className="custom-text-input-restarted">
+            <div className="custom-text-input">
                 <input
                     ref={ref}
                     type="text"

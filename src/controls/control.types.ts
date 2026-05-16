@@ -51,17 +51,3 @@ export interface TextareaInputProps {
     rows?: number
     className?: string
 }
-
-// discriminated union for Control router
-type TextControlProps = { type: 'text' } & BaseInputProps
-type NumericControlProps = { type: 'numeric' } & NumericInputProps
-type TextareaControlProps = { type: 'textarea' } & TextareaInputProps
-type SelectControlProps = { type: 'select' } & SelectInputProps
-type CheckboxControlProps = { type: 'checkbox' } & CheckboxInputProps
-
-export type ControlProps =
-    | TextControlProps
-    | NumericControlProps
-    | TextareaControlProps
-    | SelectControlProps
-    | CheckboxControlProps

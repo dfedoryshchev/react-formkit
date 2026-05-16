@@ -43,7 +43,7 @@ const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
         const currentValue = value === null ? '' : serializeValue(value)
 
         return (
-            <div className="custom-select-input-restarted">
+            <div className="custom-select-input">
                 <select
                     ref={ref}
                     value={currentValue}

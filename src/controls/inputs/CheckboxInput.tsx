@@ -13,7 +13,7 @@ interface CheckboxInputProps {
 const CheckboxInput = forwardRef<HTMLInputElement, CheckboxInputProps>(
     ({ checked, onChange, disabled, className }, ref) => {
         return (
-            <span className={`custom-checkbox-input-restarted ${className ?? ''}`.trim()}>
+            <span className={`custom-checkbox-input ${className ?? ''}`.trim()}>
                 <input
                     ref={ref}
                     type="checkbox"

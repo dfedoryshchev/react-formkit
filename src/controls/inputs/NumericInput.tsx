@@ -36,7 +36,7 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
         )
 
         return (
-            <div className="custom-numeric-input-restarted">
+            <div className="custom-numeric-input">
                 <input
                     ref={ref}
                     type="text"
