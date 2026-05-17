@@ -22,7 +22,7 @@
 }
 
 .switch-input-hidden:checked + .switch-track {
-    background: #485fc7;
+    background: var(--fk-focus-color, #485fc7);
 }
 
 .switch-thumb {

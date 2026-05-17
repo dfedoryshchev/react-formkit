@@ -2,19 +2,19 @@
     select {
         width: 100%;
         padding: 6px 10px;
-        border: 1px solid #dbdbdb;
-        border-radius: 4px;
+        border: 1px solid var(--fk-border-color, #dbdbdb);
+        border-radius: var(--fk-radius, 4px);
         font-size: 14px;
         background-color: white;
 
         &:focus {
-            border-color: #485fc7;
+            border-color: var(--fk-focus-color, #485fc7);
             outline: none;
-            box-shadow: 0 0 0 2px rgba(72, 95, 199, 0.15);
+            box-shadow: 0 0 0 2px var(--fk-focus-ring, rgba(72, 95, 199, 0.15));
         }
 
         &:disabled {
-            background-color: #f5f5f5;
+            background-color: var(--fk-disabled-bg, #f5f5f5);
             cursor: not-allowed;
         }
     }

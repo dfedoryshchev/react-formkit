@@ -1,6 +1,6 @@
 .custom-multi-autocomplete {
-    border: 1px solid #dbdbdb;
-    border-radius: 4px;
+    border: 1px solid var(--fk-border-color, #dbdbdb);
+    border-radius: var(--fk-radius, 4px);
     padding: 6px;
 
     &__tags {
@@ -15,15 +15,15 @@
         align-items: center;
         gap: 4px;
         background: #eef1fb;
-        color: #485fc7;
-        border-radius: 4px;
+        color: var(--fk-focus-color, #485fc7);
+        border-radius: var(--fk-radius, 4px);
         padding: 2px 6px;
         font-size: 13px;
 
         button {
             border: none;
             background: none;
-            color: #485fc7;
+            color: var(--fk-focus-color, #485fc7);
             cursor: pointer;
             padding: 0;
             line-height: 1;

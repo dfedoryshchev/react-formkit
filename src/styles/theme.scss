@@ -1,0 +1,11 @@
+// Default theme tokens. Override these CSS custom properties in your own
+// :root (or a scoped selector) to restyle all controls without touching
+// selectors. Each control style also inlines these as var() fallbacks, so the
+// defaults apply even if this file is not imported.
+:root {
+    --fk-border-color: #dbdbdb;
+    --fk-focus-color: #485fc7;
+    --fk-focus-ring: rgba(72, 95, 199, 0.15);
+    --fk-disabled-bg: #f5f5f5;
+    --fk-radius: 4px;
+}
