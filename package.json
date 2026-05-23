@@ -1,7 +1,6 @@
 {
   "name": "react-formkit",
   "version": "0.0.1",
-  "private": true,
   "scripts": {
     "dev": "vite dev/",
     "format": "prettier --write \"src/**/*.{ts,tsx,scss}\"",
@@ -53,5 +52,7 @@
   "sideEffects": [
     "**/*.scss",
     "**/*.css"
-  ]
+  ],
+  "license": "MIT",
+  "description": "React + TypeScript form component library built on React Hook Form and Zod"
 }
