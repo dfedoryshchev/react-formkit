@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { z, ZodTypeAny } from 'zod'
 import type { FormConfig, FieldConfig } from './config.types'
 
 const emptyValueFor = (type: FieldConfig['type']): unknown => {
@@ -33,7 +34,23 @@ export function useFormFromConfig(config: FormConfig) {
     )
 
     const fields = config
-    const schema = null
+
+    // wip: rough first pass. Everything is treated as a string and only the
+    // length rules are honoured; `required` is a no-op and numeric/boolean
+    // fields, min/max, email and pattern are not handled yet. Reworked later.
+    const schema = useMemo(() => {
+        const shape: Record<string, ZodTypeAny> = {}
+        for (const field of config) {
+            let s: ZodTypeAny = z.string()
+            for (const rule of field.validation ?? []) {
+                if (rule === 'required') continue
+                if (rule.rule === 'minLength') s = (s as z.ZodString).min(rule.value, rule.message)
+                if (rule.rule === 'maxLength') s = (s as z.ZodString).max(rule.value, rule.message)
+            }
+            shape[field.name] = s
+        }
+        return z.object(shape)
+    }, [config])
 
     return { defaults, fields, schema }
 }
