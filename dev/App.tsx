@@ -2,6 +2,7 @@ import React from 'react'
 import { z } from 'zod'
 import { Form, BasicForm } from '../src/form'
 import { FormField } from '../src/field'
+import { useFormFromConfig, ConfigFields, FormConfig } from '../src/config'
 
 const schema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -64,6 +65,41 @@ const passwordMatchValidators = [
         path: ['confirmPassword'],
     },
 ]
+
+// NOTE: declared at module scope on purpose. An inline config literal trips the
+// config-identity rebuild in useFormFromConfig; a real consumer hoists it too.
+const signupConfig: FormConfig = [
+    { name: 'fullName', type: 'text', label: 'Full name', validation: ['required', { rule: 'minLength', value: 2 }] },
+    { name: 'email', type: 'email', label: 'Email', validation: ['required', { rule: 'email' }] },
+    { name: 'age', type: 'numeric', label: 'Age', validation: [{ rule: 'min', value: 18 }] },
+    {
+        name: 'role',
+        type: 'select',
+        label: 'Role',
+        options: [
+            { value: 'admin', label: 'Admin' },
+            { value: 'editor', label: 'Editor' },
+            { value: 'viewer', label: 'Viewer' },
+        ],
+    },
+    { name: 'subscribe', type: 'checkbox', label: 'Subscribe to updates' },
+]
+
+function ConfigDrivenDemo() {
+    const { defaults, fields, schema } = useFormFromConfig(signupConfig)
+    return (
+        <BasicForm
+            defaultValues={defaults}
+            validationSchema={schema ?? undefined}
+            onSubmit={(data) => alert(JSON.stringify(data, null, 2))}
+        >
+            <ConfigFields config={fields} />
+            <button type="submit" style={{ marginTop: 16, padding: '8px 20px', fontSize: 14 }}>
+                Submit
+            </button>
+        </BasicForm>
+    )
+}
 
 const App = () => {
     const handleSubmit = async (data: any) => {
@@ -192,6 +228,12 @@ const App = () => {
                     Change password
                 </button>
             </BasicForm>
+
+            <h2 style={{ marginTop: 48 }}>Config-driven form</h2>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+                Rendered entirely from a FormConfig array via useFormFromConfig + ConfigFields.
+            </p>
+            <ConfigDrivenDemo />
         </div>
     )
 }
