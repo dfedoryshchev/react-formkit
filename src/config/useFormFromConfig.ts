@@ -21,22 +21,30 @@ const emptyValueFor = (type: FieldConfig['type']): unknown => {
     }
 }
 
-// Engine for config-driven forms: derives default values and the ordered field
-// list from a FormConfig. The zod schema is wired in a follow-up (still null
-// here, hence the wip).
+const signatureOf = (config: FormConfig) => config.map((f) => `${f.name}:${f.type}`).join('|')
+
+// Engine for config-driven forms: derives default values, the ordered field
+// list, and the zod schema from a FormConfig.
 export function useFormFromConfig(config: FormConfig) {
-    // memoized on the `config` array reference. A caller passing an
-    // inline array literal gets a new reference every render -> defaults rebuild
-    // -> fields remount. Returned to later.
+    // Memoize on a stable signature (field names + types) so an inline config
+    // array literal no longer rebuilds defaults/schema on every render.
+    // Trade-off: changing validation rules without changing names/types will
+    // not refresh the schema. Duplicate names are still last-wins (unguarded).
+    const sig = signatureOf(config)
+
     const defaults = useMemo(
         () => Object.fromEntries(config.map((f) => [f.name, f.defaultValue ?? emptyValueFor(f.type)])),
-        [config],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [sig],
+    )
+
+    const schema = useMemo(
+        () => buildSchema(config),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [sig],
     )
 
     const fields = config
-
-    // schema rebuilds on every render that passes a new config ref.
-    const schema = useMemo(() => buildSchema(config), [config])
 
     return { defaults, fields, schema }
 }
