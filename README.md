@@ -77,6 +77,38 @@ import { personName, companyName } from 'react-formkit' // presets
 
 Required fields are detected from the schema - a field with `.describe('required')` or `min(1)` shows the required indicator automatically via `useIsFieldRequired`. Cross-field rules go through `useFormLevelValidators`.
 
+## Config-driven forms
+
+Describe a form as data and render it from a config array:
+
+```tsx
+import { Form, useFormFromConfig, ConfigFields, FormConfig } from 'react-formkit'
+
+// hoist the config (module scope or memo) so it is not re-derived each render
+const config: FormConfig = [
+    { name: 'fullName', type: 'text', label: 'Full name', validation: ['required', { rule: 'minLength', value: 2 }] },
+    { name: 'email', type: 'email', label: 'Email', validation: ['required', { rule: 'email' }] },
+    { name: 'age', type: 'numeric', label: 'Age', validation: [{ rule: 'min', value: 18 }] },
+]
+
+function SignupForm() {
+    const { defaults, fields, schema } = useFormFromConfig(config)
+    return (
+        <Form defaultValues={defaults} validationSchema={schema} onSubmit={console.log}>
+            <ConfigFields config={fields} />
+        </Form>
+    )
+}
+```
+
+`useFormFromConfig` derives the default values and a Zod schema from the config; `ConfigFields` renders the controls onto the native Field/Control stack.
+
+### Known limitations
+- Hoist the config - an inline array literal re-derives defaults/schema each render.
+- `required` is not yet enforced across all field types, and non-required fields are not made optional.
+- No nested / grouped fields yet.
+- Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
+
 ## Theming
 
 Styling is driven by CSS custom properties. Override them in your own `:root` (or any scope):
