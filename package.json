@@ -11,20 +11,20 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.9.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-hook-form": "^7.54.0",
+    "@hookform/resolvers": "^5.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.58.0",
     "react-phone-input-2": "^2.15.1",
     "react-select": "^5.10.2",
-    "zod": "^3.24.0"
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
     "@typescript-eslint/eslint-plugin": "^7.13.0",
     "@typescript-eslint/parser": "^7.13.0",
     "@vitejs/plugin-react": "^4.3.1",
@@ -34,8 +34,8 @@
     "jsdom": "^29.1.1",
     "prettier": "^3.3.2",
     "sass": "^1.77.6",
-    "typescript": "^5.7.0",
-    "vite": "^6.2.0",
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0",
     "vitest": "^4.1.8"
   },
   "main": "dist/index.cjs",

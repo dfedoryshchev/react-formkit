@@ -20,7 +20,9 @@ export const useFormConfig = ({
     const formOptions = useMemo<UseFormProps>(() => {
         const opts: UseFormProps = { defaultValues }
         if (schema) {
-            opts.resolver = zodResolver(schema)
+            // @hookform/resolvers v5 overloads zodResolver for zod 3 and zod 4;
+            // our zod 3 ZodSchema needs a cast to match the v3 overload.
+            opts.resolver = zodResolver(schema as any)
         }
         return opts
     }, [schema, defaultValues])
