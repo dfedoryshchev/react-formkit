@@ -2,9 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## 0.2.0 - 2026-06-12
 
 ### Added
+- Config-driven forms engine: `useFormFromConfig`, `ConfigFields`, `buildSchema`, and `FieldConfig` / `FormConfig` types
 - `Form` component with a built-in loading-aware submit button (`withSubmitButton`, `ButtonWithFormLoader`)
 - Loading overlay and reset-on-submit options on `BasicForm`
 - Controls: `SwitchInput`, `PasswordInput`, `MultiSelectInput`, `AutocompleteInput`, `MultiAutocompleteInput`, `PhoneInput`
@@ -22,5 +23,6 @@ All notable changes to this project are documented in this file.
 
 ### Known limitations
 - Type declarations are not generated yet
+- Config: no nested / grouped fields, and `required` is not enforced across all field types
 - Cross-field validators re-validate on submit only
 - MultiSelect value mapping uses a serialize-compare workaround
