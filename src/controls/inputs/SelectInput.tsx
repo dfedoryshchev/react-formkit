@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect } from 'react'
-import { Option } from '../control.types'
+import { Option, AriaInputProps } from '../control.types'
 import {
     serializeValue,
     getOptionLabel,
@@ -8,7 +8,7 @@ import {
 } from '../utils/select.utils'
 import './SelectInput.scss'
 
-interface SelectInputProps {
+interface SelectInputProps extends AriaInputProps {
     value: unknown
     onChange: (value: unknown) => void
     options: Option[]
@@ -21,7 +21,7 @@ interface SelectInputProps {
 }
 
 const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
-    ({ value, onChange, options, placeholder, disabled, className, autoSelectFirst = false }, ref) => {
+    ({ value, onChange, options, placeholder, disabled, className, autoSelectFirst = false, ...rest }, ref) => {
         useEffect(() => {
             if (autoSelectFirst && !placeholder && isUnselected(value) && options.length > 0) {
                 onChange(getOptionValue(options[0]))
@@ -50,6 +50,7 @@ const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
                     onChange={handleChange}
                     disabled={disabled}
                     className={className}
+                    {...rest}
                 >
                     {placeholder && <option value="">{placeholder}</option>}
                     {options.map((opt, i) => (
