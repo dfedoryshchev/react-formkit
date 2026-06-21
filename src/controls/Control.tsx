@@ -31,6 +31,8 @@ interface CommonControlProps {
     className?: string
     name?: string
     id?: string
+    autoFocus?: boolean
+    onFocus?: React.FocusEventHandler<HTMLInputElement>
 }
 
 interface TextControlProps extends CommonControlProps {

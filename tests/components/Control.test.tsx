@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import Control from '../../src/controls/Control'
 
 describe('Control router', () => {
@@ -38,5 +38,17 @@ describe('Control router', () => {
     it('falls back to a text input for an unknown type', () => {
         render(<Control type={'unknown' as any} value="x" onChange={() => {}} />)
         expect(screen.getByDisplayValue('x')).toBeInTheDocument()
+    })
+
+    it('autofocuses the text input when autoFocus is set', () => {
+        render(<Control type="text" value="x" onChange={() => {}} autoFocus />)
+        expect(screen.getByDisplayValue('x')).toHaveFocus()
+    })
+
+    it('forwards onFocus to the text input', () => {
+        const onFocus = vi.fn()
+        render(<Control type="text" value="x" onChange={() => {}} onFocus={onFocus} />)
+        fireEvent.focus(screen.getByDisplayValue('x'))
+        expect(onFocus).toHaveBeenCalledTimes(1)
     })
 })

@@ -1,3 +1,5 @@
+import type { FocusEventHandler } from 'react'
+
 export interface AriaInputProps {
     'aria-required'?: boolean
     'aria-invalid'?: boolean
@@ -10,6 +12,8 @@ export interface BaseInputProps extends AriaInputProps {
     placeholder?: string
     disabled?: boolean
     className?: string
+    autoFocus?: boolean
+    onFocus?: FocusEventHandler<HTMLInputElement>
 }
 
 export interface NumericInputProps extends AriaInputProps {
