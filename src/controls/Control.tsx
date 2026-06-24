@@ -31,6 +31,7 @@ interface CommonControlProps {
     className?: string
     name?: string
     id?: string
+    readOnly?: boolean
     autoFocus?: boolean
     onFocus?: React.FocusEventHandler<HTMLInputElement>
 }
@@ -105,6 +106,7 @@ const Control: React.FC<ControlProps> = (props) => {
                     checked={!!props.value}
                     onChange={props.onChange}
                     disabled={props.disabled}
+                    className={props.className}
                 />
             )
         case 'radio':
@@ -115,6 +117,7 @@ const Control: React.FC<ControlProps> = (props) => {
                     options={(props.options ?? []) as any}
                     name={props.name || ''}
                     disabled={props.disabled}
+                    className={props.className}
                 />
             )
         case 'checkbox-group':
@@ -124,6 +127,7 @@ const Control: React.FC<ControlProps> = (props) => {
                     onChange={props.onChange}
                     options={(props.options ?? []) as any}
                     disabled={props.disabled}
+                    className={props.className}
                 />
             )
         case 'switch':
@@ -132,6 +136,7 @@ const Control: React.FC<ControlProps> = (props) => {
                     checked={!!props.value}
                     onChange={props.onChange}
                     disabled={props.disabled}
+                    className={props.className}
                 />
             )
         case 'multiselect':

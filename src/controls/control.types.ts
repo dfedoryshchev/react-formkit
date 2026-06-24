@@ -12,6 +12,7 @@ export interface BaseInputProps extends AriaInputProps {
     placeholder?: string
     disabled?: boolean
     className?: string
+    readOnly?: boolean
     autoFocus?: boolean
     onFocus?: FocusEventHandler<HTMLInputElement>
 }
@@ -54,4 +55,5 @@ export interface TextareaInputProps {
     disabled?: boolean
     rows?: number
     className?: string
+    readOnly?: boolean
 }

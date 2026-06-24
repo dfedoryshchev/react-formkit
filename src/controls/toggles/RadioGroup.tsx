@@ -13,12 +13,17 @@ interface RadioGroupProps {
     options: RadioOption[]
     name: string
     disabled?: boolean
+    className?: string
 }
 
 const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
-    ({ value, onChange, options, name, disabled }, ref) => {
+    ({ value, onChange, options, name, disabled, className }, ref) => {
         return (
-            <div ref={ref} className="custom-radio-group" role="radiogroup">
+            <div
+                ref={ref}
+                className={`custom-radio-group ${className ?? ''}`.trim()}
+                role="radiogroup"
+            >
                 {options.map((opt) => (
                     <RadioInput
                         key={opt.value}

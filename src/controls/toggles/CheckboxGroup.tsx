@@ -11,10 +11,11 @@ interface CheckboxGroupProps {
     onChange: (value: string[]) => void
     options: CheckboxOption[]
     disabled?: boolean
+    className?: string
 }
 
 const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
-    ({ value = [], onChange, options, disabled }, ref) => {
+    ({ value = [], onChange, options, disabled, className }, ref) => {
         const handleToggle = (optValue: string) => {
             const next = value.includes(optValue)
                 ? value.filter((v) => v !== optValue)
@@ -23,7 +24,11 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
         }
 
         return (
-            <div ref={ref} className="custom-checkbox-group" role="group">
+            <div
+                ref={ref}
+                className={`custom-checkbox-group ${className ?? ''}`.trim()}
+                role="group"
+            >
                 {options.map((opt) => (
                     <label key={opt.value} className="custom-checkbox-group__item">
                         <input

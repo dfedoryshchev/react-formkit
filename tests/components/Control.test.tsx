@@ -51,4 +51,22 @@ describe('Control router', () => {
         fireEvent.focus(screen.getByDisplayValue('x'))
         expect(onFocus).toHaveBeenCalledTimes(1)
     })
+
+    it('forwards readOnly to the text input', () => {
+        render(<Control type="text" value="x" onChange={() => {}} readOnly />)
+        expect(screen.getByDisplayValue('x')).toHaveAttribute('readonly')
+    })
+
+    it('applies className to the radio group', () => {
+        render(
+            <Control
+                type="radio"
+                value="a"
+                onChange={() => {}}
+                options={[{ value: 'a', label: 'A' }]}
+                className="my-radios"
+            />,
+        )
+        expect(screen.getByRole('radiogroup')).toHaveClass('custom-radio-group', 'my-radios')
+    })
 })
