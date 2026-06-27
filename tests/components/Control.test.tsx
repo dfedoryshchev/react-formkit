@@ -57,6 +57,18 @@ describe('Control router', () => {
         expect(screen.getByDisplayValue('x')).toHaveAttribute('readonly')
     })
 
+    it('forwards min and max to the numeric input', () => {
+        render(<Control type="numeric" value={5} onChange={() => {}} min={0} max={10} />)
+        const input = screen.getByDisplayValue('5')
+        expect(input).toHaveAttribute('min', '0')
+        expect(input).toHaveAttribute('max', '10')
+    })
+
+    it('forwards step to the numeric input', () => {
+        render(<Control type="numeric" value={5} onChange={() => {}} step={0.5} />)
+        expect(screen.getByDisplayValue('5')).toHaveAttribute('step', '0.5')
+    })
+
     it('applies className to the radio group', () => {
         render(
             <Control

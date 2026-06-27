@@ -46,6 +46,9 @@ interface NumericControlProps extends CommonControlProps {
     type: 'numeric'
     value: number | undefined
     onChange: (value: number | undefined) => void
+    min?: number
+    max?: number
+    step?: number
 }
 
 interface SelectControlProps extends CommonControlProps {

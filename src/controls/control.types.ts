@@ -24,6 +24,7 @@ export interface NumericInputProps extends AriaInputProps {
     disabled?: boolean
     min?: number
     max?: number
+    step?: number
 }
 
 export interface Option<T = string> {
