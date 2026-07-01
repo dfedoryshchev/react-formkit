@@ -10,11 +10,9 @@ export interface FormLevelValidator {
 // Applies cross-field zod refinements on top of a field-level schema. Each
 // refinement receives the whole form object; `path` maps the error to a field.
 //
-// a refinement attached to `path` only re-validates when that field
-// changes (or on submit). Changing the *other* field referenced by the
-// refinement will not clear or raise the error until submit, because the form
-// validates on submit. So cross-field rules effectively fire on submit only.
-// TODO: revalidate dependent fields on change (RHF trigger()).
+// Because RHF only re-validates the field being edited, changing another field
+// the refinement reads would leave the `path` error stale. useFormConfig closes
+// that gap by re-triggering the dependent paths on change (after first submit).
 export const useFormLevelValidators = (
     validationSchema?: ZodSchema,
     formLevelValidators?: FormLevelValidator[],
