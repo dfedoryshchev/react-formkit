@@ -52,6 +52,9 @@ const MultiAutocompleteInput = forwardRef<HTMLInputElement, MultiAutocompleteInp
                             add(inputValue)
                         }
                     }}
+                    // commit a pending typed value when focus leaves (e.g. the
+                    // form is submitted) so it isn't silently dropped
+                    onBlur={() => add(inputValue)}
                     placeholder={placeholder}
                     disabled={disabled}
                 />
