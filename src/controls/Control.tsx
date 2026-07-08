@@ -58,17 +58,37 @@ interface SelectControlProps extends CommonControlProps {
     options: Option[]
 }
 
+interface UrlControlProps extends CommonControlProps {
+    type: 'url'
+    value: string
+    onChange: (value: string) => void
+}
+
+interface DateControlProps extends CommonControlProps {
+    type: 'date'
+    value: string
+    onChange: (value: string) => void
+    min?: string
+    max?: string
+}
+
+interface TimeControlProps extends CommonControlProps {
+    type: 'time'
+    value: string
+    onChange: (value: string) => void
+    min?: string
+    max?: string
+    step?: number
+}
+
 // TODO: tighten the remaining control prop types (textarea, checkbox, radio,
-// email, url, date, time, datetime) the way text/numeric/select now are.
+// email, datetime) the way text/numeric/select/url/date/time now are.
 interface LooseControlProps extends CommonControlProps {
     type:
         | 'textarea'
         | 'checkbox'
         | 'radio'
         | 'email'
-        | 'url'
-        | 'date'
-        | 'time'
         | 'datetime'
         | 'checkbox-group'
         | 'switch'
@@ -83,7 +103,14 @@ interface LooseControlProps extends CommonControlProps {
     label?: string
 }
 
-type ControlProps = TextControlProps | NumericControlProps | SelectControlProps | LooseControlProps
+type ControlProps =
+    | TextControlProps
+    | NumericControlProps
+    | SelectControlProps
+    | UrlControlProps
+    | DateControlProps
+    | TimeControlProps
+    | LooseControlProps
 
 const Control: React.FC<ControlProps> = (props) => {
     switch (props.type) {
@@ -181,7 +208,7 @@ const Control: React.FC<ControlProps> = (props) => {
         }
         case 'url': {
             const { type, ...rest } = props
-            return <UrlInput {...(rest as any)} />
+            return <UrlInput {...rest} />
         }
         case 'password': {
             const { type, ...rest } = props
@@ -189,11 +216,11 @@ const Control: React.FC<ControlProps> = (props) => {
         }
         case 'date': {
             const { type, ...rest } = props
-            return <DateInput {...(rest as any)} />
+            return <DateInput {...rest} />
         }
         case 'time': {
             const { type, ...rest } = props
-            return <TimeInput {...(rest as any)} />
+            return <TimeInput {...rest} />
         }
         case 'datetime': {
             const { type, ...rest } = props
