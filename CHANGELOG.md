@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.1 - 2026-07-12
+
+### Added
+- Controls: `onFocus` and `autoFocus` passthrough
+- Controls: consistent `className` and `readOnly` styling
+- `NumericInput`: `step` / `min` / `max` passthrough
+
+### Fixed
+- Cross-field validators now re-validate on change, not only on submit
+- `MultiAutocomplete`: keep the pending typed value on submit
+- Tightened `ControlProps` for date / time / url inputs
+
 ## 0.2.0 - 2026-06-12
 
 ### Added
