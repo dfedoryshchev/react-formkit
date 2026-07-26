@@ -6,18 +6,19 @@ import {
     DIGITS_ONLY,
     ALPHANUMERIC,
 } from '../constants/charset.constants'
+import { getMessages } from '../messages'
 
-export const latinOnly = (message = 'Only Latin characters allowed') =>
+export const latinOnly = (message = getMessages().latinOnly) =>
     z.string().regex(LATIN_CHARS, message)
 
-export const cyrillicOnly = (message = 'Only Cyrillic characters allowed') =>
+export const cyrillicOnly = (message = getMessages().cyrillicOnly) =>
     z.string().regex(CYRILLIC_CHARS, message)
 
-export const latinOrCyrillic = (message = 'Only Latin or Cyrillic characters allowed') =>
+export const latinOrCyrillic = (message = getMessages().latinOrCyrillic) =>
     z.string().regex(LATIN_AND_CYRILLIC, message)
 
-export const digitsOnly = (message = 'Only digits allowed') =>
+export const digitsOnly = (message = getMessages().digitsOnly) =>
     z.string().regex(DIGITS_ONLY, message)
 
-export const alphanumeric = (message = 'Only letters and numbers allowed') =>
+export const alphanumeric = (message = getMessages().alphanumeric) =>
     z.string().regex(ALPHANUMERIC, message)

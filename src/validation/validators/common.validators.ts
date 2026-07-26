@@ -1,25 +1,27 @@
 import { z } from 'zod'
+import { getMessages } from '../messages'
 
-export const required = (message = 'This field is required') =>
+export const required = (message = getMessages().required) =>
     z.string().min(1, message).describe('required')
 
-export const requiredNumber = (message = 'This field is required') =>
+export const requiredNumber = (message = getMessages().required) =>
     z.number({ required_error: message }).describe('required')
 
 export const minLength = (min: number, message?: string) =>
-    z.string().min(min, message || `Must be at least ${min} characters`)
+    z.string().min(min, message || getMessages().minLength(min))
 
 export const maxLength = (max: number, message?: string) =>
-    z.string().max(max, message || `Must be at most ${max} characters`)
+    z.string().max(max, message || getMessages().maxLength(max))
 
-export const email = (message = 'Invalid email address') => z.string().email(message)
+export const email = (message = getMessages().email) => z.string().email(message)
 
-export const phone = (message = 'Invalid phone number') =>
+export const phone = (message = getMessages().phone) =>
     z.string().regex(/^\+?[\d\s\-()]{7,}$/, message)
 
-export const url = (message = 'Invalid URL') => z.string().url(message)
+export const url = (message = getMessages().url) => z.string().url(message)
 
-export const notZero = (message = 'Must not be zero') => z.number().refine((v) => v !== 0, message)
+export const notZero = (message = getMessages().notZero) =>
+    z.number().refine((v) => v !== 0, message)
 
-export const matchesRegex = (pattern: RegExp, message = 'Invalid format') =>
+export const matchesRegex = (pattern: RegExp, message = getMessages().matchesRegex) =>
     z.string().regex(pattern, message)
