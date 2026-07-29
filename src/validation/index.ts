@@ -3,8 +3,16 @@ export { useFormConfig } from './useFormConfig'
 export { useFormLevelValidators } from './useFormLevelValidators'
 export type { FormLevelValidator } from './useFormLevelValidators'
 export { useIsFieldRequired } from './useIsFieldRequired'
-export { defaultMessages, getMessages, setMessages } from './messages'
-export type { MessageMap } from './messages'
+export {
+    defaultMessages,
+    getMessages,
+    setMessages,
+    withMessages,
+    resolveMessages,
+    interpolate,
+} from './messages'
+export type { MessageMap, MessageOverrides } from './messages'
+export { MessageContext, useMessages } from './MessageContext'
 export * from './validators/common.validators'
 export * from './validators/number.validators'
 export * from './validators/charset.validators'

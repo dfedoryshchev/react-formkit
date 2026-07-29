@@ -1,6 +1,17 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { defaultMessages, getMessages, setMessages } from '../../src/validation/messages'
-import { required, email, minLength } from '../../src/validation/validators/common.validators'
+import {
+    defaultMessages,
+    getMessages,
+    interpolate,
+    setMessages,
+    withMessages,
+} from '../../src/validation/messages'
+import {
+    required,
+    email,
+    minLength,
+    maxLength,
+} from '../../src/validation/validators/common.validators'
 import { integer, between } from '../../src/validation/validators/number.validators'
 import { digitsOnly } from '../../src/validation/validators/charset.validators'
 import { personName } from '../../src/validation/validators/name.validators'
@@ -68,5 +79,77 @@ describe('setMessages', () => {
     it('reaches a validator that passes an explicit message', () => {
         setMessages({ email: 'from the map' })
         expect(firstError(email('explicit').safeParse('nope'))).toBe('explicit')
+    })
+})
+
+describe('interpolate', () => {
+    it('substitutes named placeholders', () => {
+        expect(interpolate('at least {min} of {max}', { min: 2, max: 8 })).toBe('at least 2 of 8')
+    })
+
+    it('leaves an unknown placeholder in place', () => {
+        expect(interpolate('{min} to {nope}', { min: 1 })).toBe('1 to {nope}')
+    })
+
+    it('repeats a placeholder used twice', () => {
+        expect(interpolate('{min}-{min}', { min: 5 })).toBe('5-5')
+    })
+})
+
+// A translation bundle is JSON, so it cannot carry functions. A template string
+// has to work everywhere a parameterised default does.
+describe('template overrides', () => {
+    it('accepts a template for a parameterised message', () => {
+        setMessages({ minLength: 'Minimum {min} caracteres' })
+        expect(firstError(minLength(4).safeParse('ab'))).toBe('Minimum 4 caracteres')
+    })
+
+    it('fills both values, in any order', () => {
+        setMessages({ between: 'Entre {max} et {min}' })
+        expect(getMessages().between(1, 10)).toBe('Entre 10 et 1')
+    })
+
+    it('still accepts a function override', () => {
+        setMessages({ maxLength: (max: number) => `${max} max` })
+        expect(firstError(maxLength(2).safeParse('abc'))).toBe('2 max')
+    })
+})
+
+describe('withMessages', () => {
+    it('applies overrides to validators built inside the callback', () => {
+        const schema = withMessages({ required: 'Champ obligatoire' }, () => required())
+        expect(firstError(schema.safeParse(''))).toBe('Champ obligatoire')
+    })
+
+    it('restores the previous map afterwards', () => {
+        withMessages({ required: 'Champ obligatoire' }, () => required())
+        expect(firstError(required().safeParse(''))).toBe('This field is required')
+    })
+
+    it('leaves messages built before the callback untouched', () => {
+        const before = required()
+        withMessages({ required: 'Champ obligatoire' }, () => required())
+        expect(firstError(before.safeParse(''))).toBe('This field is required')
+    })
+
+    it('layers over the app-wide map instead of resetting it', () => {
+        setMessages({ email: 'Adresse invalide', required: 'Obligatoire' })
+        withMessages({ required: 'Vraiment obligatoire' }, () => {
+            expect(firstError(required().safeParse(''))).toBe('Vraiment obligatoire')
+            expect(firstError(email().safeParse('nope'))).toBe('Adresse invalide')
+        })
+    })
+
+    it('restores the map even when the callback throws', () => {
+        expect(() =>
+            withMessages({ required: 'Champ obligatoire' }, () => {
+                throw new Error('build failed')
+            }),
+        ).toThrow('build failed')
+        expect(getMessages().required).toBe('This field is required')
+    })
+
+    it('returns whatever the callback builds', () => {
+        expect(withMessages(undefined, () => 42)).toBe(42)
     })
 })
