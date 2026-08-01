@@ -103,10 +103,30 @@ function SignupForm() {
 
 `useFormFromConfig` derives the default values and a Zod schema from the config; `ConfigFields` renders the controls onto the native Field/Control stack.
 
+### Conditional fields
+
+A field is rendered only while a sibling matches its `showWhen` condition (`is`, `isNot`, or a `test` predicate):
+
+```tsx
+const config: FormConfig = [
+    { name: 'hasAddress', type: 'checkbox', label: 'I have a mailing address' },
+    { name: 'street', type: 'text', label: 'Street', showWhen: { field: 'hasAddress', is: true } },
+]
+```
+
+The same thing outside a config, around any subtree:
+
+```tsx
+<ConditionalField when="hasAddress" is={true}>
+    <FormField name="street" type="text" label="Street" />
+</ConditionalField>
+```
+
 ### Known limitations
 - Hoist the config - an inline array literal re-derives defaults/schema each render.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
 - No nested / grouped fields yet.
+- A hidden conditional field keeps its last value and is still validated, so a required field inside a hidden branch blocks submit.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
 
 ## Theming

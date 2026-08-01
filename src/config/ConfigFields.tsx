@@ -1,5 +1,5 @@
 import React from 'react'
-import { FormField } from '@/field'
+import { ConditionalField, FormField } from '@/field'
 import type { FormConfig } from './config.types'
 
 interface ConfigFieldsProps {
@@ -12,17 +12,28 @@ interface ConfigFieldsProps {
 export const ConfigFields: React.FC<ConfigFieldsProps> = ({ config }) => {
     return (
         <>
-            {config.map((field) => (
-                <FormField
-                    key={field.name}
-                    name={field.name}
-                    type={field.type}
-                    label={field.label}
-                    placeholder={field.placeholder}
-                    options={field.options as any}
-                    disabled={field.disabled}
-                />
-            ))}
+            {config.map((field) => {
+                const control = (
+                    <FormField
+                        key={field.name}
+                        name={field.name}
+                        type={field.type}
+                        label={field.label}
+                        placeholder={field.placeholder}
+                        options={field.options as any}
+                        disabled={field.disabled}
+                    />
+                )
+
+                if (!field.showWhen) return control
+
+                const { field: watched, ...condition } = field.showWhen
+                return (
+                    <ConditionalField key={field.name} when={watched} {...condition}>
+                        {control}
+                    </ConditionalField>
+                )
+            })}
         </>
     )
 }

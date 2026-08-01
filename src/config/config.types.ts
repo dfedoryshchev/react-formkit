@@ -1,5 +1,6 @@
 import type { ControlType } from '@/controls/Control'
 import type { Option } from '@/controls/control.types'
+import type { FieldCondition } from '@/field'
 
 // Validation rules expressed as data; resolved to a zod schema by buildSchema.
 export type ValidationDescriptor =
@@ -24,6 +25,8 @@ export interface FieldConfig {
     options?: Option[]
     validation?: ValidationDescriptor[]
     disabled?: boolean
+    // Render this field only while a sibling field matches the condition.
+    showWhen?: FieldCondition
 }
 
 export type FormConfig = FieldConfig[]
