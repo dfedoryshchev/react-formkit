@@ -1,4 +1,5 @@
 import { z, ZodTypeAny } from 'zod'
+import { matchesCondition } from '@/field'
 import type { FieldConfig, FormConfig, ValidationDescriptor } from './config.types'
 
 const baseFor = (field: FieldConfig): ZodTypeAny => {
@@ -44,8 +45,19 @@ const applyRule = (schema: ZodTypeAny, rule: ValidationDescriptor): ZodTypeAny =
 const enforceRequired = (schema: ZodTypeAny): ZodTypeAny =>
     schema instanceof z.ZodString ? schema.min(1, 'Required') : schema
 
-export function buildSchema(config: FormConfig): z.ZodObject<any> {
+// A field carrying `showWhen` is validated only while its condition holds. Its
+// key in the object stays lenient and the real schema runs in the refinement
+// below, because a required field inside a hidden branch would otherwise fail
+// submit with an error the user cannot see or reach.
+interface ConditionalEntry {
+    field: FieldConfig
+    schema: ZodTypeAny
+}
+
+export function buildSchema(config: FormConfig): ZodTypeAny {
     const shape: Record<string, ZodTypeAny> = {}
+    const conditional: ConditionalEntry[] = []
+
     for (const field of config) {
         let s = baseFor(field)
         const rules = field.validation ?? []
@@ -59,7 +71,35 @@ export function buildSchema(config: FormConfig): z.ZodObject<any> {
         // Enforce required vs optional: required fields must carry a value
         // (strings non-empty), while non-required fields accept their empty
         // value (undefined / null) instead of silently failing validation.
-        shape[field.name] = rules.includes('required') ? enforceRequired(s) : s.nullish()
+        const enforced = rules.includes('required') ? enforceRequired(s) : s.nullish()
+
+        if (field.showWhen) {
+            // Lenient key = the bare base type, not `enforced` and not `s`:
+            // rules like minLength would otherwise still reject the leftover
+            // value of a hidden field.
+            shape[field.name] = baseFor(field).nullish()
+            conditional.push({ field, schema: enforced })
+            continue
+        }
+        shape[field.name] = enforced
     }
-    return z.object(shape)
+
+    const object = z.object(shape)
+    if (conditional.length === 0) return object
+
+    return object.superRefine((values, ctx) => {
+        for (const { field, schema } of conditional) {
+            const condition = field.showWhen as NonNullable<FieldConfig['showWhen']>
+            const watched = (values as Record<string, unknown>)[condition.field]
+            if (!matchesCondition(watched, condition)) continue
+
+            const result = schema.safeParse((values as Record<string, unknown>)[field.name])
+            if (result.success) continue
+            for (const issue of result.error.issues) {
+                // Re-anchor onto the field's own path so the message lands on
+                // the input rather than at the form root.
+                ctx.addIssue({ ...issue, path: [field.name, ...issue.path] })
+            }
+        }
+    })
 }

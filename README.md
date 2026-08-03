@@ -114,19 +114,28 @@ const config: FormConfig = [
 ]
 ```
 
+A config-driven conditional field is validated only while it is visible, and its value is
+dropped when it hides - so a required field inside a collapsed branch can neither block submit
+with an unreachable error nor smuggle a stale value into the payload.
+
 The same thing outside a config, around any subtree:
 
 ```tsx
-<ConditionalField when="hasAddress" is={true}>
+<ConditionalField when="hasAddress" is={true} clear="street">
     <FormField name="street" type="text" label="Street" />
 </ConditionalField>
 ```
+
+`clear` is opt-in here and takes a field name or a list of them. Without it the branch keeps
+its values while hidden, which is what you want when a branch is only collapsed for space.
+Validation of a hand-written schema is yours to make conditional; the automatic half applies to
+`showWhen` in a config.
 
 ### Known limitations
 - Hoist the config - an inline array literal re-derives defaults/schema each render.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
 - No nested / grouped fields yet.
-- A hidden conditional field keeps its last value and is still validated, so a required field inside a hidden branch blocks submit.
+- A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
 
 ## Theming

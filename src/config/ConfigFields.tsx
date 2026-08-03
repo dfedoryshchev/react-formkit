@@ -22,6 +22,12 @@ export const ConfigFields: React.FC<ConfigFieldsProps> = ({ config }) => {
                         placeholder={field.placeholder}
                         options={field.options as any}
                         disabled={field.disabled}
+                        // A conditional field's schema key is deliberately lenient
+                        // (buildSchema enforces it in a refinement instead), so the
+                        // required marker has to come from the config directly.
+                        required={
+                            field.showWhen ? (field.validation ?? []).includes('required') : undefined
+                        }
                     />
                 )
 
@@ -29,7 +35,12 @@ export const ConfigFields: React.FC<ConfigFieldsProps> = ({ config }) => {
 
                 const { field: watched, ...condition } = field.showWhen
                 return (
-                    <ConditionalField key={field.name} when={watched} {...condition}>
+                    <ConditionalField
+                        key={field.name}
+                        when={watched}
+                        clear={field.name}
+                        {...condition}
+                    >
                         {control}
                     </ConditionalField>
                 )
