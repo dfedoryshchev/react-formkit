@@ -1,5 +1,6 @@
 import { z, ZodTypeAny } from 'zod'
 import { matchesCondition } from '@/field'
+import { getMessages } from '@/validation/messages'
 import type { FieldConfig, FormConfig, ValidationDescriptor } from './config.types'
 
 const baseFor = (field: FieldConfig): ZodTypeAny => {
@@ -19,22 +20,43 @@ const baseFor = (field: FieldConfig): ZodTypeAny => {
 const isArrayField = (type: FieldConfig['type']): boolean =>
     type === 'checkbox-group' || type === 'multiselect' || type === 'multi-autocomplete'
 
+// A descriptor with no `message` used to fall through to zod's own English
+// string ("String must contain at least 2 character(s)"), so a config-driven
+// form ignored the message map that every hand-written validator reads. The
+// map is consulted here instead, and only when the descriptor stays silent -
+// an explicit message on the rule still wins.
+//
+// Read at build time, not at module load: `setMessages` swaps the map, and a
+// schema is expected to carry whatever was active when it was built.
 const applyRule = (schema: ZodTypeAny, rule: ValidationDescriptor): ZodTypeAny => {
     // `required` is handled separately in buildSchema; skip it here.
     if (rule === 'required') return schema
+    const messages = getMessages()
     switch (rule.rule) {
         case 'minLength':
-            return (schema as z.ZodString).min(rule.value, rule.message)
+            return (schema as z.ZodString).min(
+                rule.value,
+                rule.message ?? messages.minLength(rule.value),
+            )
         case 'maxLength':
-            return (schema as z.ZodString).max(rule.value, rule.message)
+            return (schema as z.ZodString).max(
+                rule.value,
+                rule.message ?? messages.maxLength(rule.value),
+            )
         case 'email':
-            return (schema as z.ZodString).email(rule.message)
+            return (schema as z.ZodString).email(rule.message ?? messages.email)
         case 'min':
-            return (schema as z.ZodNumber).min(rule.value, rule.message)
+            return (schema as z.ZodNumber).min(
+                rule.value,
+                rule.message ?? messages.minValue(rule.value),
+            )
         case 'max':
-            return (schema as z.ZodNumber).max(rule.value, rule.message)
+            return (schema as z.ZodNumber).max(
+                rule.value,
+                rule.message ?? messages.maxValue(rule.value),
+            )
         case 'pattern':
-            return (schema as z.ZodString).regex(rule.value, rule.message)
+            return (schema as z.ZodString).regex(rule.value, rule.message ?? messages.matchesRegex)
         default:
             return schema
     }
@@ -42,8 +64,10 @@ const applyRule = (schema: ZodTypeAny, rule: ValidationDescriptor): ZodTypeAny =
 
 // A required string must be non-empty; for non-string scalars, being required
 // simply means not optional (their empty value already fails the base schema).
+// The literal this used to carry ('Required') was the one message in the
+// library that no override could reach.
 const enforceRequired = (schema: ZodTypeAny): ZodTypeAny =>
-    schema instanceof z.ZodString ? schema.min(1, 'Required') : schema
+    schema instanceof z.ZodString ? schema.min(1, getMessages().required) : schema
 
 // A field carrying `showWhen` is validated only while its condition holds. Its
 // key in the object stays lenient and the real schema runs in the refinement
