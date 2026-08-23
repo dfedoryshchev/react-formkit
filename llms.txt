@@ -1,0 +1,72 @@
+# react-formkit
+
+> React + TypeScript form component library built on React Hook Form and Zod. Fields are declared
+> once - as JSX or as a plain data config - and the same pipeline derives the Zod schema, the
+> required indicators, the validation messages and the rendered controls from that single
+> declaration.
+
+Version 0.2.1, MIT. Built against React 19, react-hook-form 7, @hookform/resolvers 5 and zod 3;
+`react-select` and `react-phone-input-2` are needed only for the multiselect and phone controls.
+Type declarations are not generated yet, so the published package ships without `.d.ts` files.
+
+Two ways to build a form, sharing one runtime:
+
+- **JSX**: `<Form validationSchema={schema}>` with `<FormField name type label />` children.
+- **Config**: a `FormConfig` array plus `useFormFromConfig` and `<ConfigFields />`, which derives
+  default values and a Zod schema from the data.
+
+Everything is exported from the package root; there are no deep import paths.
+
+## Docs
+
+- [README](README.md): install, the control table, usage for both form styles, config-driven
+  forms, conditional fields, theming via CSS custom properties, and the current known limitations.
+- [AGENTS.md](AGENTS.md): how to make changes in this repository - required checks, where each
+  kind of change belongs, and the constraints that are not visible from the call site.
+- [CHANGELOG](CHANGELOG.md): released versions.
+
+## API surface
+
+- [src/index.ts](src/index.ts): the public barrel; re-exports the five area barrels below.
+- [src/form/index.ts](src/form/index.ts): `Form` (with a loading-aware submit button),
+  `BasicForm` (same pipeline, bring your own submit control), `ButtonWithFormLoader`,
+  `withSubmitButton`.
+- [src/field/index.ts](src/field/index.ts): `FormField`, `Field`, `FieldMessage`,
+  `ConditionalField`, `matchesCondition`.
+- [src/controls/index.ts](src/controls/index.ts): `Control` (the type router) and every concrete
+  input - text, numeric, textarea, select, checkbox, checkbox-group, radio, switch, password,
+  email, url, date, time, datetime, multiselect, autocomplete, multi-autocomplete, phone.
+- [src/validation/index.ts](src/validation/index.ts): validators (common, number, charset, name
+  presets), the message map, `useFormLevelValidators` for cross-field rules,
+  `useIsFieldRequired`, `useFormConfig`, `ValidationSchemaContext`.
+- [src/config/index.ts](src/config/index.ts): `FormConfig`, `FieldConfig`,
+  `ValidationDescriptor`, `useFormFromConfig`, `buildSchema`, `ConfigFields`.
+
+## Behaviour worth knowing before generating code
+
+- [src/validation/messages.ts](src/validation/messages.ts): every built-in message lives in
+  `defaultMessages`. `setMessages` replaces the app-wide map; the `messages` prop on
+  `Form`/`BasicForm` overrides per form; `withMessages` performs the scoped swap underneath.
+  **Messages resolve when the schema is built, not when the module loads** - validator factories
+  run outside React, so React context cannot reach them. Parameterised messages are functions;
+  overrides may be templates with named placeholders such as `{min}` so a JSON bundle can supply
+  them.
+- [src/form/Form.tsx](src/form/Form.tsx): `validationSchema` accepts `ZodSchema` **or**
+  `() => ZodSchema`. Per-form `messages` only affect a builder, because a ready-made schema
+  already carries its strings.
+- [src/config/buildSchema.ts](src/config/buildSchema.ts): turns `ValidationDescriptor[]` into a
+  Zod schema. An explicit `message` on a descriptor wins; otherwise the message map supplies the
+  default. A `showWhen` field is validated only while its condition holds.
+- [src/field/ConditionalField.tsx](src/field/ConditionalField.tsx): conditions are `is`, `isNot`
+  or a `test` predicate. In a config, a hidden field's value is dropped; with the standalone
+  component, clearing is opt-in via `clear`.
+- [src/validation/useIsFieldRequired.ts](src/validation/useIsFieldRequired.ts): the required
+  indicator is inferred from the schema rather than declared on the field.
+
+## Optional
+
+- [src/styles/theme.scss](src/styles/theme.scss): the CSS custom properties available for
+  theming (`--fk-focus-color`, `--fk-border-color`, `--fk-focus-ring`, `--fk-disabled-bg`,
+  `--fk-radius`).
+- [tests](tests): vitest suites mirroring `src/` by area; the config and message suites are the
+  clearest executable specification of the behaviour described above.
