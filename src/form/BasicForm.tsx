@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { FormProvider } from 'react-hook-form'
+import { FormProvider, UseFormProps } from 'react-hook-form'
 import { ZodSchema } from 'zod'
 import { useFormConfig } from '@/validation/useFormConfig'
 import { FormLevelValidator } from '@/validation/useFormLevelValidators'
@@ -20,6 +20,10 @@ interface BasicFormProps {
     // Message overrides for this form only. Keep the object stable (module
     // scope or memoized); it is a dependency of the schema build.
     messages?: MessageOverrides
+    // When validation runs, passed straight to RHF. A debounced async rule is
+    // only worth its delay under 'onChange' or 'onBlur'; RHF's own default
+    // (validate on submit, re-validate on change) applies when this is unset.
+    mode?: UseFormProps['mode']
 }
 
 const BasicForm: React.FC<BasicFormProps> = ({
@@ -31,6 +35,7 @@ const BasicForm: React.FC<BasicFormProps> = ({
     loadingOverlay,
     formLevelValidators,
     messages,
+    mode,
 }) => {
     const resolvedMessages = useMemo(() => resolveMessages(messages), [messages])
 
@@ -44,7 +49,12 @@ const BasicForm: React.FC<BasicFormProps> = ({
         [validationSchema, messages],
     )
 
-    const methods = useFormConfig({ validationSchema: schema, defaultValues, formLevelValidators })
+    const methods = useFormConfig({
+        validationSchema: schema,
+        defaultValues,
+        formLevelValidators,
+        mode,
+    })
 
     const handleSubmit = async (data: any) => {
         await onSubmit(data)

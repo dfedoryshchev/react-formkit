@@ -104,6 +104,20 @@ names in order. An unknown placeholder is left as written rather than blanked, s
 visible instead of silently vanishing. Adding a parameterised message means adding its entry
 there too.
 
+**`zodResolver` already parses asynchronously, so an async rule needs nothing from the resolver
+setup.** `useFormConfig` builds it with no `mode` option, and that default path calls
+`schema.parseAsync`. The config engine is the exception: `buildSchema` validates each `showWhen`
+field with a synchronous `safeParse` inside a `superRefine`, and zod throws when an async
+refinement is reached during a synchronous parse. That is why `asyncCheck` is for hand-written
+schemas only; supporting it in a config means making that refinement async for every config form,
+and finding a way for a data-only `ValidationDescriptor` to name a function.
+
+**A debounced validator holds its state in the closure it was built with.** Same reason as the
+message map: the factory runs at schema-build time, outside React, so there is no ref or state to
+put it in. One `asyncCheck` call is one debounce channel, which makes a stable schema a
+correctness requirement rather than an optimisation - a schema rebuilt each render restarts the
+window each render and it never elapses.
+
 **Required detection is inferred from the schema, not declared.** `useIsFieldRequired` reads the
 resolved schema, so it has to unwrap wrappers (`ZodEffects` among them) to find the field. A
 change that wraps the schema and forgets the unwrap silently drops the required marker from

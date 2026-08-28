@@ -36,6 +36,9 @@ export const defaultMessages = {
 
     // name
     personName: 'Enter a valid name',
+
+    // async
+    asyncCheck: 'This value is not available',
 }
 
 export type MessageMap = typeof defaultMessages

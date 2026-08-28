@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react'
+import { UseFormProps } from 'react-hook-form'
 import { ZodSchema } from 'zod'
 import BasicForm from './BasicForm'
 import withSubmitButton from './withSubmitButton'
@@ -11,6 +12,7 @@ interface FormProps {
     buttonLabel?: string
     children?: ReactNode
     messages?: MessageOverrides
+    mode?: UseFormProps['mode']
 }
 
 // BasicForm plus an automatic loading-aware submit button. Use BasicForm

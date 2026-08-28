@@ -77,6 +77,30 @@ import { personName, companyName } from 'react-formkit' // presets
 
 Required fields are detected from the schema - a field with `.describe('required')` or `min(1)` shows the required indicator automatically via `useIsFieldRequired`. Cross-field rules go through `useFormLevelValidators`.
 
+### Async rules
+
+`asyncCheck` wraps a field schema in a debounced remote check - "is this username still taken?". The check resolves `true` when the value is acceptable, and `mode` decides when it runs:
+
+```tsx
+import { Form, FormField, asyncCheck, required } from 'react-formkit'
+
+// hoist the schema: the debounce lives in the closure the validator was built with,
+// so a schema rebuilt each render restarts the window each render
+const schema = z.object({
+    username: asyncCheck(required(), isUsernameFree, { delay: 300, message: 'That username is taken' }),
+})
+
+const SignupForm = () => (
+    <Form validationSchema={schema} mode="onChange" onSubmit={console.log}>
+        <FormField name="username" type="text" label="Username" />
+    </Form>
+)
+```
+
+The check is never asked about an empty value, clearing the field cancels a request already counting down, and a verdict about a value the user has moved on from cannot decide the value now in the field. A check that throws fails open, so a network blip leaves the field submittable.
+
+`mode` is passed straight to React Hook Form (`onChange`, `onBlur`, `onTouched`, `all`, `onSubmit`) and applies to every rule on the form, not just the async ones.
+
 ## Config-driven forms
 
 Describe a form as data and render it from a config array:

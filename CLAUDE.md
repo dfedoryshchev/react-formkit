@@ -151,6 +151,48 @@ Field rules come from the Zod schema. The library also exports ready-made valida
 Cross-field rules (confirm-password, date ranges, "one of these is required") do not belong in a
 per-field schema. Use `useFormLevelValidators`.
 
+### Asking a server: `asyncCheck`
+
+`asyncCheck(base, check, options)` wraps a field schema in a debounced remote check, the canonical
+one being "is this username still free?"; `check` resolves `true` when the value is acceptable. A
+debounce is only worth its delay under a `mode` that validates before submit, so pass one.
+
+```tsx
+import { Form, FormField, asyncCheck, required } from 'react-formkit'
+import { z } from 'zod'
+
+// module scope, not inside the component - see below
+const schema = z.object({
+    username: asyncCheck(required(), isUsernameFree, {
+        delay: 300,
+        message: 'That username is taken',
+    }),
+})
+
+<Form validationSchema={schema} mode="onChange" onSubmit={onSubmit}>
+    <FormField name="username" type="text" label="Username" />
+</Form>
+```
+
+Four things to know before generating code around it:
+
+**Hoist the schema.** The debounce lives in the closure the validator was built with, because
+validators run outside React and there is no hook to hold it in. A schema rebuilt on every render
+hands the field a fresh channel that has never seen a keystroke, so the window never elapses.
+
+**The check never sees an empty value.** The base schema owns that case, and clearing the field
+also cancels a request that was already counting down.
+
+**A verdict about a value the user has left cannot decide the current one.** Every parse waiting
+on a window receives the verdict for the value that window ends on, whatever order the requests
+come back in.
+
+**A check that throws fails open.** A network blip leaves the field valid rather than
+unsubmittable; the server is still the authority at submit.
+
+`asyncCheck` applies to a hand-written schema. A config's `validation` list is data, and a remote
+check is a function, so the config entry point has no way to express one yet.
+
 ## Styling
 
 Styling is CSS custom properties, not props or a theme object. Override them in any scope:
@@ -168,7 +210,8 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
 ## Current limits, so you do not generate around them
 
 - No nested or grouped fields in a config; object- and array-shaped values cannot be modelled yet.
-- Async and cross-field rules are not part of the config schema.
+- Async and cross-field rules are not part of the config schema; `asyncCheck` and
+  `useFormLevelValidators` apply to a hand-written schema only.
 - `required` is not enforced across every field type, and non-required fields are not made optional.
 - A hidden conditional field is absent from the submitted values rather than present and empty.
 - Type declarations are not generated yet, so there are no `.d.ts` files in the published package.

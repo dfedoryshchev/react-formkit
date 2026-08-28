@@ -37,8 +37,8 @@ Everything is exported from the package root; there are no deep import paths.
   input - text, numeric, textarea, select, checkbox, checkbox-group, radio, switch, password,
   email, url, date, time, datetime, multiselect, autocomplete, multi-autocomplete, phone.
 - [src/validation/index.ts](src/validation/index.ts): validators (common, number, charset, name
-  presets), the message map, `useFormLevelValidators` for cross-field rules,
-  `useIsFieldRequired`, `useFormConfig`, `ValidationSchemaContext`.
+  presets), `asyncCheck` for debounced remote rules, the message map, `useFormLevelValidators` for
+  cross-field rules, `useIsFieldRequired`, `useFormConfig`, `ValidationSchemaContext`.
 - [src/config/index.ts](src/config/index.ts): `FormConfig`, `FieldConfig`,
   `ValidationDescriptor`, `useFormFromConfig`, `buildSchema`, `ConfigFields`.
 
@@ -53,7 +53,12 @@ Everything is exported from the package root; there are no deep import paths.
   them.
 - [src/form/Form.tsx](src/form/Form.tsx): `validationSchema` accepts `ZodSchema` **or**
   `() => ZodSchema`. Per-form `messages` only affect a builder, because a ready-made schema
-  already carries its strings.
+  already carries its strings. `mode` is passed straight to React Hook Form.
+- [src/validation/validators/async.validators.ts](src/validation/validators/async.validators.ts):
+  `asyncCheck(base, check, options)` debounces a remote check onto a field. **Its debounce state
+  lives in the closure the validator was built with**, so the schema has to be stable. A verdict
+  about a value the field has moved on from never decides the current value, an empty value is
+  never sent, and a check that throws fails open. Hand-written schemas only, not configs.
 - [src/config/buildSchema.ts](src/config/buildSchema.ts): turns `ValidationDescriptor[]` into a
   Zod schema. An explicit `message` on a descriptor wins; otherwise the message map supplies the
   default. A `showWhen` field is validated only while its condition holds.
