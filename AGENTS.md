@@ -118,6 +118,24 @@ put it in. One `asyncCheck` call is one debounce channel, which makes a stable s
 correctness requirement rather than an optimisation - a schema rebuilt each render restarts the
 window each render and it never elapses.
 
+**The pending state of an async check is keyed off the schema instance, not off a field name.**
+`asyncCheck` cannot know what the field will be called and two forms may both have a `username`, so
+the channel `useIsAsyncValidating` subscribes to lives in a `WeakMap` keyed by the schema the factory
+returned; the hook finds it by walking the shape in `ValidationSchemaContext`, the same context
+`useIsFieldRequired` reads. The consequence to keep in mind: zod methods that clone rather than wrap
+(`.describe()` builds `new This({ ...this._def })`) return an instance the channel is not attached
+to. Wrapping is safe - `unwrapField` in `schema.utils.ts` peels `ZodEffects`, `ZodOptional`,
+`ZodNullable` and `ZodDefault` - so a new wrapper type needs a case there or the indicator silently
+goes dead.
+
+**React Hook Form's per-field `isValidating` cannot stand in for it.** Measured against RHF 7.71
+under `zodResolver`: editing one field marks only that field validating even while a sibling's
+remote check is in flight on the same parse, and `handleSubmit` marks every mounted field, remote
+check or not. Both follow from the resolver parsing the whole schema at once. RHF also only
+maintains the map at all once something subscribes to `formState.isValidating` or
+`formState.validatingFields`, which is why the test that pins this reads `formState.validatingFields`
+rather than `getFieldState`.
+
 **Required detection is inferred from the schema, not declared.** `useIsFieldRequired` reads the
 resolved schema, so it has to unwrap wrappers (`ZodEffects` among them) to find the field. A
 change that wraps the schema and forgets the unwrap silently drops the required marker from

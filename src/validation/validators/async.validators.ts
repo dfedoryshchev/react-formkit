@@ -12,6 +12,35 @@ export interface AsyncCheckOptions {
     message?: string
 }
 
+// What a field needs besides the verdict: whether it is waiting for one right
+// now, so a consumer can put a spinner next to it.
+export interface AsyncCheckChannel {
+    // True from the moment a parse arms the debounce window until the verdict
+    // for the value that window ended on has landed.
+    isPending: () => boolean
+    // Called on every change of `isPending`. Returns an unsubscribe.
+    subscribe: (listener: () => void) => () => void
+}
+
+// The channel belongs to the validator instance, not to a field name: the
+// factory has no idea what the field ends up being called, and two forms may
+// both have a `username`. Keying it off the schema `asyncCheck` returns means
+// the handle is the one the form already publishes on
+// `ValidationSchemaContext`, and nothing has to be registered or torn down.
+const channels = new WeakMap<object, AsyncCheckChannel>()
+
+/**
+ * The pending channel of an `asyncCheck` schema, or `undefined` for anything
+ * else. In a component, prefer `useIsAsyncValidating`, which finds the field's
+ * schema and subscribes for you.
+ *
+ * Zod methods that clone rather than wrap - `.describe()` among them - produce
+ * a new instance the channel is not attached to, so apply them to the base
+ * schema and keep `asyncCheck` outermost.
+ */
+export const getAsyncCheckChannel = (schema: unknown): AsyncCheckChannel | undefined =>
+    typeof schema === 'object' && schema !== null ? channels.get(schema) : undefined
+
 const DEFAULT_DELAY = 300
 
 // Nothing to ask a server about, and the base schema already has its own
@@ -62,6 +91,29 @@ export const asyncCheck = <T extends ZodTypeAny>(
     let round = 0
     let settled: { value: unknown; ok: boolean } | undefined
 
+    // The wait, published. It tracks the deferred rather than the request: a
+    // keystroke that re-arms the window keeps one uninterrupted wait, which is
+    // what a debounced field should show, and the cached and blank paths never
+    // start one because they never make the field wait.
+    const listeners = new Set<() => void>()
+    let isPending = false
+
+    const setIsPending = (next: boolean): void => {
+        if (next === isPending) return
+        isPending = next
+        for (const listener of listeners) listener()
+    }
+
+    const channel: AsyncCheckChannel = {
+        isPending: () => isPending,
+        subscribe: (listener) => {
+            listeners.add(listener)
+            return () => {
+                listeners.delete(listener)
+            }
+        },
+    }
+
     // `ok === undefined` means the check failed rather than returned a verdict.
     const finish = (mine: number, value: unknown, ok?: boolean): void => {
         // A newer check has launched, or a newer window is still counting down.
@@ -72,6 +124,7 @@ export const asyncCheck = <T extends ZodTypeAny>(
         if (ok !== undefined) settled = { value, ok }
         const pending = waiting
         waiting = null
+        setIsPending(false)
         // Fail open: a transport failure is not a verdict, and the server is
         // the authority at submit anyway. Nothing is cached, so the next parse
         // asks again.
@@ -90,6 +143,7 @@ export const asyncCheck = <T extends ZodTypeAny>(
         }
         const pending = waiting
         waiting = null
+        setIsPending(false)
         pending?.resolve(true)
     }
 
@@ -119,10 +173,11 @@ export const asyncCheck = <T extends ZodTypeAny>(
         const pending = waiting
         if (timer !== undefined) clearTimeout(timer)
         timer = setTimeout(run, delay)
+        setIsPending(true)
         return pending.promise
     }
 
-    return base.superRefine(async (value, ctx) => {
+    const schema = base.superRefine(async (value, ctx) => {
         // A failed string check leaves zod's status dirty, not aborted, so the
         // refinement still runs for an empty field; without this every untouched
         // required field would fire a request.
@@ -133,4 +188,7 @@ export const asyncCheck = <T extends ZodTypeAny>(
         if (await ask(value)) return
         ctx.addIssue({ code: z.ZodIssueCode.custom, message })
     })
+
+    channels.set(schema, channel)
+    return schema
 }

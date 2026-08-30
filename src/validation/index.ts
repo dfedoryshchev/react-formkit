@@ -3,6 +3,7 @@ export { useFormConfig } from './useFormConfig'
 export { useFormLevelValidators } from './useFormLevelValidators'
 export type { FormLevelValidator } from './useFormLevelValidators'
 export { useIsFieldRequired } from './useIsFieldRequired'
+export { useIsAsyncValidating } from './useIsAsyncValidating'
 export {
     defaultMessages,
     getMessages,

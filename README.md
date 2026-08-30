@@ -101,6 +101,26 @@ The check is never asked about an empty value, clearing the field cancels a requ
 
 `mode` is passed straight to React Hook Form (`onChange`, `onBlur`, `onTouched`, `all`, `onSubmit`) and applies to every rule on the form, not just the async ones.
 
+#### Showing that a field is waiting
+
+`useIsAsyncValidating` reports whether one field is waiting on its remote check - true from the keystroke that arms the debounce window until the verdict lands, and one uninterrupted wait across a burst of keystrokes rather than one per key:
+
+```tsx
+const UsernameField = () => {
+    const waiting = useIsAsyncValidating('username')
+    return (
+        <>
+            <FormField name="username" type="text" label="Username" />
+            {waiting && <Spinner />}
+        </>
+    )
+}
+```
+
+It works anywhere inside a `Form` or `BasicForm`, and is false for a field with no `asyncCheck` on it.
+
+React Hook Form's own per-field `isValidating` answers a different question here. The resolver parses the whole schema, so RHF marks the field whose event started the parse rather than the fields actually waiting on a request, and on submit it marks every mounted field whether it has a remote check or not.
+
 ## Config-driven forms
 
 Describe a form as data and render it from a config array:

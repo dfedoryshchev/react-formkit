@@ -3,10 +3,12 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { z } from 'zod'
+import { useFormContext } from 'react-hook-form'
 import { BasicForm } from '../../src/form'
 import { FormField } from '../../src/field'
 import { asyncCheck } from '../../src/validation/validators/async.validators'
 import { required } from '../../src/validation/validators/common.validators'
+import { useIsAsyncValidating } from '../../src/validation/useIsAsyncValidating'
 
 const TAKEN = 'That username is taken'
 
@@ -24,6 +26,7 @@ const renderForm = (
     check: (value: string) => Promise<boolean>,
     mode: 'onChange' | 'onBlur',
     onSubmit = vi.fn(),
+    extra?: React.ReactNode,
 ) => {
     const schema = z.object({
         username: asyncCheck(required(), check, { delay: 10, message: TAKEN }),
@@ -36,6 +39,7 @@ const renderForm = (
             mode={mode}
         >
             <FormField name="username" type="text" label="Username" />
+            {extra}
             <button type="submit">Submit</button>
         </BasicForm>,
     )
@@ -136,5 +140,137 @@ describe('debounced async validation through the form', () => {
 
         expect(screen.getByText(TAKEN)).toBeInTheDocument()
         expect(input).toHaveValue('bob')
+    })
+})
+
+const Waiting = ({ name }: { name: string }) => (
+    <span data-testid={`waiting-${name}`}>{String(useIsAsyncValidating(name))}</span>
+)
+
+const waiting = (name: string) => screen.getByTestId(`waiting-${name}`).textContent
+
+// `plain` carries no remote check; `other` carries one and starts non-blank, so
+// a parse triggered by any field reaches it.
+const renderTwoAsyncFields = (
+    check: (value: string) => Promise<boolean>,
+    otherCheck: (value: string) => Promise<boolean>,
+    probe?: React.ReactNode,
+) => {
+    const schema = z.object({
+        username: asyncCheck(required(), check, { delay: 10, message: TAKEN }),
+        other: asyncCheck(required(), otherCheck, { delay: 10, message: TAKEN }),
+        plain: z.string().optional(),
+    })
+    render(
+        <BasicForm
+            onSubmit={vi.fn()}
+            validationSchema={schema}
+            defaultValues={{ username: '', other: 'seeded', plain: '' }}
+            mode="onChange"
+        >
+            <FormField name="username" type="text" label="Username" />
+            <FormField name="other" type="text" label="Other" />
+            <FormField name="plain" type="text" label="Plain" />
+            <Waiting name="username" />
+            <Waiting name="other" />
+            <Waiting name="plain" />
+            <Waiting name="absent" />
+            {probe}
+            <button type="submit">Submit</button>
+        </BasicForm>,
+    )
+    return { input: screen.getAllByRole('textbox')[0] }
+}
+
+describe('useIsAsyncValidating', () => {
+    it('reports the field as waiting until its verdict lands', async () => {
+        const gate = deferred<boolean>()
+        const { input } = renderForm(
+            () => gate.promise,
+            'onChange',
+            vi.fn(),
+            <Waiting name="username" />,
+        )
+
+        expect(waiting('username')).toBe('false')
+
+        fireEvent.change(input, { target: { value: 'ada' } })
+        await waitFor(() => expect(waiting('username')).toBe('true'))
+
+        gate.resolve(false)
+        await waitFor(() => expect(screen.getByText(TAKEN)).toBeInTheDocument())
+        expect(waiting('username')).toBe('false')
+    })
+
+    it('stops waiting when the field is emptied before the window elapses', async () => {
+        const gate = deferred<boolean>()
+        const { input } = renderForm(
+            () => gate.promise,
+            'onChange',
+            vi.fn(),
+            <Waiting name="username" />,
+        )
+
+        fireEvent.change(input, { target: { value: 'ada' } })
+        await waitFor(() => expect(waiting('username')).toBe('true'))
+
+        fireEvent.change(input, { target: { value: '' } })
+        await waitFor(() => expect(waiting('username')).toBe('false'))
+    })
+
+    it('is false for a name the schema has no async check for', async () => {
+        const gate = deferred<boolean>()
+        renderTwoAsyncFields(
+            () => gate.promise,
+            () => gate.promise,
+        )
+
+        expect(waiting('plain')).toBe('false')
+        expect(waiting('absent')).toBe('false')
+    })
+
+    it('reports every field the parse is actually waiting on, not just the edited one', async () => {
+        const gate = deferred<boolean>()
+        const otherCheck = vi.fn(() => gate.promise)
+        const { input } = renderTwoAsyncFields(() => gate.promise, otherCheck)
+
+        fireEvent.change(input, { target: { value: 'ada' } })
+
+        // Editing `username` re-parses the whole schema, which asks about
+        // `other` too. Both are waiting; `plain` never is.
+        await waitFor(() => expect(otherCheck).toHaveBeenCalled())
+        expect(waiting('username')).toBe('true')
+        expect(waiting('other')).toBe('true')
+        expect(waiting('plain')).toBe('false')
+
+        gate.resolve(true)
+        await waitFor(() => expect(waiting('username')).toBe('false'))
+        expect(waiting('other')).toBe('false')
+    })
+
+    // Why the library carries its own signal. React Hook Form's per-field
+    // `isValidating` names the field whose event started the parse; under a
+    // resolver the parse is the whole schema, so on submit RHF marks every
+    // mounted field - including one with no remote check at all.
+    it('does not mark a field with no remote check while the form submits', async () => {
+        const gate = deferred<boolean>()
+        const RhfProbe = () => {
+            const { formState } = useFormContext()
+            return <span data-testid="rhf-plain">{String(!!formState.validatingFields.plain)}</span>
+        }
+        renderTwoAsyncFields(
+            () => gate.promise,
+            () => gate.promise,
+            <RhfProbe />,
+        )
+
+        fireEvent.click(screen.getByText('Submit'))
+        await waitFor(() => expect(screen.getByTestId('rhf-plain')).toHaveTextContent('true'))
+
+        expect(waiting('plain')).toBe('false')
+        expect(waiting('other')).toBe('true')
+
+        gate.resolve(true)
+        await waitFor(() => expect(waiting('other')).toBe('false'))
     })
 })

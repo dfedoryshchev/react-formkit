@@ -193,6 +193,29 @@ unsubmittable; the server is still the authority at submit.
 `asyncCheck` applies to a hand-written schema. A config's `validation` list is data, and a remote
 check is a function, so the config entry point has no way to express one yet.
 
+### The pending indicator: `useIsAsyncValidating`
+
+`useIsAsyncValidating(fieldName)` is true while that one field waits on its remote check, from the
+keystroke that arms the window until the verdict lands. A burst of keystrokes is one wait, not one
+per key, which is the indicator a debounced field should show.
+
+```tsx
+const waiting = useIsAsyncValidating('username')
+```
+
+It reads the wait out of the validator closure, for the same reason the closure holds the debounce.
+The field is found through the form's schema, so the hook works anywhere inside `Form` or
+`BasicForm` and returns false for a field with no `asyncCheck` on it.
+
+**Do not reach for React Hook Form's per-field `isValidating` instead.** It answers a different
+question under a resolver: the resolver parses the whole schema, so RHF marks the field whose event
+started the parse rather than the fields that are waiting on a request, and on submit it marks every
+mounted field whether it has a remote check or not.
+
+**Keep `asyncCheck` outermost.** Zod methods that clone rather than wrap - `.describe()` among them -
+return an instance the pending channel is not attached to, and the hook then reads false forever.
+Wrapping is fine: `.optional()` and a further `.refine()` both keep it reachable.
+
 ## Styling
 
 Styling is CSS custom properties, not props or a theme object. Override them in any scope:

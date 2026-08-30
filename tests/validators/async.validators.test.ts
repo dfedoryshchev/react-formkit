@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { z } from 'zod'
-import { asyncCheck } from '../../src/validation/validators/async.validators'
+import { asyncCheck, getAsyncCheckChannel } from '../../src/validation/validators/async.validators'
 import { required } from '../../src/validation/validators/common.validators'
 import { setMessages } from '../../src/validation/messages'
 
@@ -276,6 +276,139 @@ describe('asyncCheck - stale results', () => {
         // The settled verdict is still bob's, so a re-parse of 'bob' is free.
         expect(firstError(await schema.safeParseAsync('bob'))).toBe('taken')
         expect(check).toHaveBeenCalledTimes(2)
+    })
+})
+
+// The verdict is not the only thing a field needs from a remote check: it also
+// needs to be able to say it is waiting. The wait is owned by the closure, so
+// the closure is what publishes it.
+describe('asyncCheck - pending channel', () => {
+    it('gives no channel for a schema that is not an async check', () => {
+        expect(getAsyncCheckChannel(z.string())).toBeUndefined()
+        expect(getAsyncCheckChannel(undefined)).toBeUndefined()
+    })
+
+    it('is pending from the moment the window is armed until the verdict lands', async () => {
+        const gate = deferred<boolean>()
+        const schema = asyncCheck(z.string(), () => gate.promise, { delay: 50 })
+        const channel = getAsyncCheckChannel(schema)!
+
+        expect(channel.isPending()).toBe(false)
+
+        const result = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(0)
+        expect(channel.isPending()).toBe(true)
+
+        // The window has elapsed and the request is out; still waiting.
+        await vi.advanceTimersByTimeAsync(60)
+        expect(channel.isPending()).toBe(true)
+
+        gate.resolve(true)
+        await result
+        expect(channel.isPending()).toBe(false)
+    })
+
+    it('reports one wait, not two, when a keystroke re-arms the window', async () => {
+        const schema = asyncCheck(z.string(), () => Promise.resolve(true), { delay: 50 })
+        const channel = getAsyncCheckChannel(schema)!
+        const seen: boolean[] = []
+        channel.subscribe(() => seen.push(channel.isPending()))
+
+        const first = schema.safeParseAsync('a')
+        await vi.advanceTimersByTimeAsync(0)
+        const second = schema.safeParseAsync('ab')
+        await vi.advanceTimersByTimeAsync(60)
+        await Promise.all([first, second])
+
+        // One indicator across the burst is the whole point of the debounce.
+        expect(seen).toEqual([true, false])
+    })
+
+    it('stops waiting when the field is emptied and the window is cancelled', async () => {
+        const check = vi.fn().mockResolvedValue(true)
+        const schema = asyncCheck(required(), check, { delay: 50 })
+        const channel = getAsyncCheckChannel(schema)!
+
+        const typed = schema.safeParseAsync('a')
+        await vi.advanceTimersByTimeAsync(0)
+        expect(channel.isPending()).toBe(true)
+
+        const cleared = schema.safeParseAsync('')
+        await vi.advanceTimersByTimeAsync(0)
+        expect(channel.isPending()).toBe(false)
+
+        await Promise.all([typed, cleared])
+        expect(check).not.toHaveBeenCalled()
+    })
+
+    it('stops waiting when the check throws', async () => {
+        const schema = asyncCheck(z.string(), () => Promise.reject(new Error('network down')), {
+            delay: 10,
+        })
+        const channel = getAsyncCheckChannel(schema)!
+
+        const result = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(20)
+
+        expect((await result).success).toBe(true)
+        expect(channel.isPending()).toBe(false)
+    })
+
+    it('does not wait at all for a repeat parse answered from the settled verdict', async () => {
+        const check = vi.fn().mockResolvedValue(true)
+        const schema = asyncCheck(z.string(), check, { delay: 50 })
+        const channel = getAsyncCheckChannel(schema)!
+
+        const first = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(60)
+        await first
+
+        const seen: boolean[] = []
+        channel.subscribe(() => seen.push(channel.isPending()))
+
+        // What submit does. No request, so nothing to wait for.
+        await schema.safeParseAsync('ada')
+        expect(seen).toEqual([])
+        expect(channel.isPending()).toBe(false)
+        expect(check).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops notifying an unsubscribed listener', async () => {
+        const schema = asyncCheck(z.string(), () => Promise.resolve(true), { delay: 50 })
+        const channel = getAsyncCheckChannel(schema)!
+        const seen: boolean[] = []
+        const unsubscribe = channel.subscribe(() => seen.push(channel.isPending()))
+
+        const first = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(60)
+        await first
+        expect(seen).toEqual([true, false])
+
+        unsubscribe()
+        const second = schema.safeParseAsync('bob')
+        await vi.advanceTimersByTimeAsync(60)
+        await second
+        expect(seen).toEqual([true, false])
+    })
+
+    it('keeps two validator instances on their own channels', async () => {
+        const slow = deferred<boolean>()
+        const slowSchema = asyncCheck(z.string(), () => slow.promise, { delay: 50 })
+        const fastSchema = asyncCheck(z.string(), () => Promise.resolve(true), { delay: 50 })
+        const slowChannel = getAsyncCheckChannel(slowSchema)!
+        const fastChannel = getAsyncCheckChannel(fastSchema)!
+
+        const pending = slowSchema.safeParseAsync('ada')
+        const settling = fastSchema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(60)
+        await settling
+
+        expect(fastChannel.isPending()).toBe(false)
+        expect(slowChannel.isPending()).toBe(true)
+
+        slow.resolve(true)
+        await pending
+        expect(slowChannel.isPending()).toBe(false)
     })
 })
 
