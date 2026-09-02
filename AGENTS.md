@@ -118,6 +118,15 @@ put it in. One `asyncCheck` call is one debounce channel, which makes a stable s
 correctness requirement rather than an optimisation - a schema rebuilt each render restarts the
 window each render and it never elapses.
 
+**Only a change to the value re-arms that window.** The refinement does not see keystrokes, it sees
+parses, and under a resolver the parse is the whole schema - so editing any other field runs it
+again with a value nobody touched. Treating that as a keystroke starves the check twice over: the
+window is pushed out for as long as the neighbouring field is being typed into, and a request
+already in flight for the same value is stranded behind the `timer !== undefined` guard in `finish`,
+so the answer is discarded and re-requested. `ask` compares against `latest` and joins the existing
+wait when the value is unchanged. Anything added there has to keep that comparison ahead of the
+re-arm.
+
 **The pending state of an async check is keyed off the schema instance, not off a field name.**
 `asyncCheck` cannot know what the field will be called and two forms may both have a `username`, so
 the channel `useIsAsyncValidating` subscribes to lives in a `WeakMap` keyed by the schema the factory

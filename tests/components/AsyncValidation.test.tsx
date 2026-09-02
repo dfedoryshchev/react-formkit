@@ -141,6 +141,44 @@ describe('debounced async validation through the form', () => {
         expect(screen.getByText(TAKEN)).toBeInTheDocument()
         expect(input).toHaveValue('bob')
     })
+
+    // The resolver parses the whole schema, so every keystroke in `note` asks
+    // about `username` too, with a value nobody touched. Against a server that
+    // answers slower than the quiet period, that is a request per keystroke and
+    // an indicator that cannot clear.
+    it('does not re-ask about a field the edit did not touch', async () => {
+        const check = vi.fn(
+            (value: string) =>
+                new Promise<boolean>((resolve) => setTimeout(() => resolve(value !== 'ada'), 200)),
+        )
+        const schema = z.object({
+            username: asyncCheck(required(), check, { delay: 20, message: TAKEN }),
+            note: z.string().optional(),
+        })
+        render(
+            <BasicForm
+                onSubmit={vi.fn()}
+                validationSchema={schema}
+                defaultValues={{ username: 'ada', note: '' }}
+                mode="onChange"
+            >
+                <FormField name="username" type="text" label="Username" />
+                <FormField name="note" type="text" label="Note" />
+                <Waiting name="username" />
+                <button type="submit">Submit</button>
+            </BasicForm>,
+        )
+        const note = screen.getAllByRole('textbox')[1]
+
+        for (const value of ['h', 'he', 'hel', 'hell']) {
+            fireEvent.change(note, { target: { value } })
+            await new Promise((resolve) => setTimeout(resolve, 40))
+        }
+
+        await waitFor(() => expect(waiting('username')).toBe('false'))
+        expect(check).toHaveBeenCalledTimes(1)
+        expect(check).toHaveBeenCalledWith('ada')
+    })
 })
 
 const Waiting = ({ name }: { name: string }) => (

@@ -174,7 +174,7 @@ const schema = z.object({
 </Form>
 ```
 
-Four things to know before generating code around it:
+Five things to know before generating code around it:
 
 **Hoist the schema.** The debounce lives in the closure the validator was built with, because
 validators run outside React and there is no hook to hold it in. A schema rebuilt on every render
@@ -189,6 +189,11 @@ come back in.
 
 **A check that throws fails open.** A network blip leaves the field valid rather than
 unsubmittable; the server is still the authority at submit.
+
+**One request per value, not per parse.** Validation parses the whole schema, so editing any other
+field runs this one's check too - but with an unchanged value that joins the wait already open
+instead of starting a new window. Request volume tracks what the user typed into this field, not
+how busy the rest of the form is.
 
 `asyncCheck` applies to a hand-written schema. A config's `validation` list is data, and a remote
 check is a function, so the config entry point has no way to express one yet.

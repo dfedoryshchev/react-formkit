@@ -168,6 +168,14 @@ export const asyncCheck = <T extends ZodTypeAny>(
         if (!waiting && settled && Object.is(settled.value, value)) {
             return Promise.resolve(settled.ok)
         }
+        // The parse that reaches this field is the parse of the whole schema,
+        // so a change to any other field asks about this one too, with a value
+        // it never left. Re-arming on that would push the quiet period out for
+        // as long as the neighbour is being typed into, and would strand the
+        // request already in flight for the same value behind the timer guard
+        // in `finish`, buying a duplicate request and an indicator that cannot
+        // clear. Only a change to this value is a reason to start over.
+        if (waiting && Object.is(latest, value)) return waiting.promise
         latest = value
         if (!waiting) waiting = createDeferred()
         const pending = waiting

@@ -279,6 +279,84 @@ describe('asyncCheck - stale results', () => {
     })
 })
 
+// A resolver parses the whole schema, so a change to any field re-runs this
+// refinement too - with a value this field never left. That parse is not a
+// keystroke and must not be treated as one.
+describe('asyncCheck - a parse that does not change the value', () => {
+    it('does not push the quiet period out', async () => {
+        const check = vi.fn().mockResolvedValue(true)
+        const schema = asyncCheck(z.string(), check, { delay: 50 })
+
+        const typed = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(30)
+        const neighbour = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(30)
+
+        // 60ms since the value last changed, and the quiet period is 50.
+        expect(check).toHaveBeenCalledTimes(1)
+        await Promise.all([typed, neighbour])
+    })
+
+    it('does not discard the request already in flight for that value', async () => {
+        const answer: Array<(ok: boolean) => void> = []
+        const check = vi.fn(() => new Promise<boolean>((resolve) => answer.push(resolve)))
+        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+
+        const typed = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(20)
+        expect(check).toHaveBeenCalledTimes(1)
+
+        const neighbour = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(20)
+        answer[0](false)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(check).toHaveBeenCalledTimes(1)
+        expect(firstError(await typed)).toBe('taken')
+        expect(firstError(await neighbour)).toBe('taken')
+    })
+
+    it('leaves one wait open, so the answer to it still clears the indicator', async () => {
+        const answer: Array<(ok: boolean) => void> = []
+        const check = vi.fn(() => new Promise<boolean>((resolve) => answer.push(resolve)))
+        const schema = asyncCheck(z.string(), check, { delay: 10 })
+        const channel = getAsyncCheckChannel(schema)!
+
+        const typed = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(20)
+
+        // Five keystrokes in a neighbouring field while the request is out.
+        for (let i = 0; i < 5; i += 1) {
+            void schema.safeParseAsync('ada')
+            await vi.advanceTimersByTimeAsync(20)
+        }
+
+        // The one request that was made is answered.
+        answer[0](true)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(check).toHaveBeenCalledTimes(1)
+        expect(channel.isPending()).toBe(false)
+        expect((await typed).success).toBe(true)
+    })
+
+    it('still re-arms when the value did change', async () => {
+        const check = vi.fn().mockResolvedValue(true)
+        const schema = asyncCheck(z.string(), check, { delay: 50 })
+
+        const typed = schema.safeParseAsync('ada')
+        await vi.advanceTimersByTimeAsync(30)
+        const retyped = schema.safeParseAsync('bob')
+        await vi.advanceTimersByTimeAsync(30)
+        expect(check).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(30)
+        expect(check).toHaveBeenCalledTimes(1)
+        expect(check).toHaveBeenCalledWith('bob')
+        await Promise.all([typed, retyped])
+    })
+})
+
 // The verdict is not the only thing a field needs from a remote check: it also
 // needs to be able to say it is waiting. The wait is owned by the closure, so
 // the closure is what publishes it.
