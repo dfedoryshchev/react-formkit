@@ -175,10 +175,35 @@ its values while hidden, which is what you want when a branch is only collapsed 
 Validation of a hand-written schema is yours to make conditional; the automatic half applies to
 `showWhen` in a config.
 
+### Repeated fields
+
+`FormFieldArray` repeats its children once per item in an array-valued field. It is a render
+prop, and the row it hands you carries the path prefix to build field names from:
+
+```tsx
+<FormFieldArray name="contacts" empty={<p>No contacts yet</p>}>
+    {({ name, index }) => (
+        <FormField name={`${name}.email`} type="email" label={`Email ${index + 1}`} />
+    )}
+</FormFieldArray>
+```
+
+Compose the name from `row.name` rather than writing `contacts.${index}` yourself - that is the
+one place a field array goes quietly wrong. Rows are keyed by react-hook-form's own row id, not
+by the index, so a later reorder moves a row rather than retyping two of them.
+
+Errors land on the row's own path, and the required indicator now reads the schema through that
+path too, so a `min(1)` inside the element schema marks the field in every row.
+
+Adding, removing and reordering rows are yours for now, through react-hook-form's
+`useFieldArray` on the same name. Array shapes are a hand-written-schema feature: a config
+cannot express a repeated field yet.
+
 ### Known limitations
 - Hoist the config - an inline array literal re-derives defaults/schema each render.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
-- No nested / grouped fields yet.
+- No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
+- `useIsAsyncValidating` does not resolve a field inside an array. One `asyncCheck` is shared by every row, so the pending state would be shared too.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
 

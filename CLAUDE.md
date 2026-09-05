@@ -137,6 +137,38 @@ for space should keep what was typed into it:
 Making a hand-written schema conditional is yours to do; the automatic half applies to `showWhen`
 in a config.
 
+## Repeated fields
+
+`FormFieldArray` repeats its children once per item in an array-valued field. It is a render
+prop, and the row it hands you carries the path prefix:
+
+```tsx
+<FormFieldArray name="contacts" empty={<p>No contacts yet</p>}>
+    {({ name, index }) => (
+        <FormField name={`${name}.email`} type="email" label={`Email ${index + 1}`} />
+    )}
+</FormFieldArray>
+```
+
+**Build the field name from `row.name`, not from the index.** `` `${name}.email` `` and
+`` `contacts.${index}.email` `` agree today and stop agreeing the moment the array is nested or
+renamed, and a name that is one character off registers a second field rather than failing.
+
+Rows are keyed by react-hook-form's row id rather than the index, so reordering moves a row
+instead of retyping two of them. Errors arrive on the row's own path, and the required indicator
+reads the schema through that path - a `min(1)` in the element schema marks the field in every
+row.
+
+Three things it deliberately does not do:
+
+- **No add, remove or reorder controls.** Call react-hook-form's `useFieldArray` on the same
+  name for those; this component renders rows.
+- **No config support.** A repeated field cannot be expressed in a `FormConfig` yet, so this is
+  the hand-written-schema entry point only.
+- **No pending indicator inside a row.** `useIsAsyncValidating` does not resolve a path into an
+  array, and it should not until `asyncCheck` keeps state per field - one `asyncCheck` in an
+  element schema is one channel shared by every row.
+
 ## Validation
 
 Field rules come from the Zod schema. The library also exports ready-made validators:
@@ -238,6 +270,7 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
 ## Current limits, so you do not generate around them
 
 - No nested or grouped fields in a config; object- and array-shaped values cannot be modelled yet.
+  `FormFieldArray` covers the hand-written-schema half of that only.
 - Async and cross-field rules are not part of the config schema; `asyncCheck` and
   `useFormLevelValidators` apply to a hand-written schema only.
 - `required` is not enforced across every field type, and non-required fields are not made optional.

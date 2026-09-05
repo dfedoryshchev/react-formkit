@@ -32,7 +32,7 @@ Everything is exported from the package root; there are no deep import paths.
   `BasicForm` (same pipeline, bring your own submit control), `ButtonWithFormLoader`,
   `withSubmitButton`.
 - [src/field/index.ts](src/field/index.ts): `FormField`, `Field`, `FieldMessage`,
-  `ConditionalField`, `matchesCondition`.
+  `ConditionalField`, `matchesCondition`, `FormFieldArray`.
 - [src/controls/index.ts](src/controls/index.ts): `Control` (the type router) and every concrete
   input - text, numeric, textarea, select, checkbox, checkbox-group, radio, switch, password,
   email, url, date, time, datetime, multiselect, autocomplete, multi-autocomplete, phone.
@@ -72,8 +72,19 @@ Everything is exported from the package root; there are no deep import paths.
 - [src/field/ConditionalField.tsx](src/field/ConditionalField.tsx): conditions are `is`, `isNot`
   or a `test` predicate. In a config, a hidden field's value is dropped; with the standalone
   component, clearing is opt-in via `clear`.
+- [src/field/FormFieldArray.tsx](src/field/FormFieldArray.tsx): repeats its children once per item
+  in an array-valued field, as a render prop. Build each field's name from the row's `name`
+  (`contacts.0`) rather than composing the index. Rows are keyed by react-hook-form's row id, so a
+  reorder moves a row. It renders rows only - add, remove and reorder are the caller's, through
+  `useFieldArray` on the same name. Hand-written schemas only; a config cannot express a repeated
+  field. `useIsAsyncValidating` does not resolve a path inside an array, and one `asyncCheck` is
+  shared by every row.
 - [src/validation/useIsFieldRequired.ts](src/validation/useIsFieldRequired.ts): the required
-  indicator is inferred from the schema rather than declared on the field.
+  indicator is inferred from the schema rather than declared on the field. The lookup walks a
+  field PATH (`address.street`, `contacts.0.email`) via `fieldAt` in `schema.utils.ts`, unwrapping
+  each container on the way down and leaving the field itself wrapped - whether it is optional is
+  the question being asked. An array index is matched and discarded, since every element shares
+  one schema.
 
 ## Optional
 

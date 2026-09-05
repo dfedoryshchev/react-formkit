@@ -150,6 +150,21 @@ resolved schema, so it has to unwrap wrappers (`ZodEffects` among them) to find 
 change that wraps the schema and forgets the unwrap silently drops the required marker from
 every field on the form rather than failing loudly.
 
+**A field name is a PATH, and the lookup walks it.** `fieldAt` in `schema.utils.ts` resolves
+`address.street` and `contacts.0.email` as well as `email`, unwrapping each container on the way
+down and handing back the field it lands on still wrapped - whether that field is optional is
+usually the question being asked, so unwrapping it would answer a different one. An array index
+is matched as digits and discarded, because every element of an array shares one schema; that is
+also why an index past the end, which happens for one render after a row is removed, still
+resolves. The cost of the walk is that a literal field name containing a dot is no longer
+findable, which react-hook-form does not allow anyway.
+
+**`useIsAsyncValidating` deliberately still does NOT walk a path.** Giving it `fieldAt` would
+make it resolve `contacts.0.username`, and the channel it found would be the same object for
+every row - verified: two rows of one element schema return one identical channel - so every
+row's indicator would light at once. It is false today, which is wrong in a quieter way. Fix the
+per-field state in `asyncCheck` first.
+
 **Config conditionals clear; hand-written ones do not, by default.** A `showWhen` field in a
 config is validated only while visible and its value is dropped when it hides. The standalone
 `ConditionalField` takes `clear` as an opt-in, because a branch that is only collapsed for space
