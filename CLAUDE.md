@@ -159,10 +159,53 @@ instead of retyping two of them. Errors arrive on the row's own path, and the re
 reads the schema through that path - a `min(1)` in the element schema marks the field in every
 row.
 
-Three things it deliberately does not do:
+### Adding, removing and reordering
 
-- **No add, remove or reorder controls.** Call react-hook-form's `useFieldArray` on the same
-  name for those; this component renders rows.
+The row also carries `remove`, `moveUp` and `moveDown`, and `isFirst` / `isLast` so it knows
+which of the two moves to offer. `append` belongs to the array rather than to a row, so it comes
+through the `actions` slot alongside `count`:
+
+```tsx
+<FormFieldArray
+    name="contacts"
+    empty={<p>No contacts yet</p>}
+    actions={({ append, count }) => (
+        <button type="button" onClick={() => append({ email: '' })}>
+            {`Add contact (${count})`}
+        </button>
+    )}
+>
+    {({ name, remove, moveUp, moveDown, isFirst, isLast }) => (
+        <>
+            <FormField name={`${name}.email`} type="email" label="Email" />
+            <button type="button" onClick={remove}>
+                Remove
+            </button>
+            <button type="button" onClick={moveUp} disabled={isFirst}>
+                Up
+            </button>
+            <button type="button" onClick={moveDown} disabled={isLast}>
+                Down
+            </button>
+        </>
+    )}
+</FormFieldArray>
+```
+
+**Give every one of those buttons `type="button"`.** A bare `<button>` inside a form submits it,
+so a remove control without the type removes the row and posts the form.
+
+**`append` takes the value the new row starts as.** The component never sees the element schema,
+so a blank row it invented would be a guess at a shape only you know.
+
+**`actions` renders in the empty state too**, next to `empty` rather than instead of it. An add
+control that appears only once a row exists leaves an emptied array with no way back into it.
+
+A move past either end is refused rather than passed to react-hook-form, so `disabled` on those
+buttons is presentation and not the guard.
+
+Two things it deliberately does not do:
+
 - **No config support.** A repeated field cannot be expressed in a `FormConfig` yet, so this is
   the hand-written-schema entry point only.
 - **No pending indicator inside a row.** `useIsAsyncValidating` does not resolve a path into an

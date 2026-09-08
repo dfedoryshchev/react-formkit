@@ -30,7 +30,7 @@ differently from `tsc` and is the only step that would catch a bad import path.
 ```
 src/
   form/        BasicForm, Form, submit-button HOCs
-  field/       FormField, Field, the field HOC chain, ConditionalField
+  field/       FormField, Field, the field HOC chain, ConditionalField, FormFieldArray
   controls/    Control (the type router) + every concrete input
   validation/  validators, the message map, form-level rules, required detection
   config/      config types, buildSchema, useFormFromConfig, ConfigFields

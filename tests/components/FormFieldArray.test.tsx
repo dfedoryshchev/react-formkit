@@ -21,6 +21,14 @@ const two = {
     ],
 }
 
+const three = {
+    contacts: [
+        { email: 'first@example.com', note: '' },
+        { email: 'second@example.com', note: '' },
+        { email: 'third@example.com', note: '' },
+    ],
+}
+
 const renderArray = (defaultValues: unknown = two, onSubmit = () => {}) =>
     render(
         <BasicForm
@@ -137,6 +145,141 @@ describe('FormFieldArray', () => {
         expect(onSubmit.mock.calls[0][0].contacts.map((c: { email: string }) => c.email)).toEqual([
             'first@example.com',
             'second@example.com',
+        ])
+    })
+})
+
+// Every button below is explicitly type="button". A bare <button> inside a form
+// submits it, so a row control that forgets the type looks like it works and
+// posts the form on every click.
+const renderControls = (defaultValues: unknown = two, onSubmit = () => {}) =>
+    render(
+        <BasicForm
+            onSubmit={onSubmit}
+            validationSchema={schema}
+            defaultValues={defaultValues as never}
+            mode="onChange"
+        >
+            <FormFieldArray
+                name="contacts"
+                empty={<p>No contacts yet</p>}
+                actions={({ append, count }) => (
+                    <button type="button" onClick={() => append({ email: '', note: '' })}>
+                        {`Add (${count})`}
+                    </button>
+                )}
+            >
+                {({ name, index, remove, moveUp, moveDown }) => (
+                    <>
+                        <FormField name={`${name}.email`} type="email" label={`Email ${index}`} />
+                        <button type="button" onClick={remove}>{`Remove ${index}`}</button>
+                        <button type="button" onClick={moveUp}>{`Up ${index}`}</button>
+                        <button type="button" onClick={moveDown}>{`Down ${index}`}</button>
+                    </>
+                )}
+            </FormFieldArray>
+            <button type="submit">Send</button>
+        </BasicForm>,
+    )
+
+const emails = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('input')).map((i) => i.value)
+
+describe('FormFieldArray controls', () => {
+    it('renders the actions slot after the rows', () => {
+        renderControls()
+        expect(screen.getByText('Add (2)')).toBeInTheDocument()
+    })
+
+    it('appends a row through the actions slot', async () => {
+        const { container } = renderControls()
+        fireEvent.click(screen.getByText('Add (2)'))
+        await waitFor(() => expect(emails(container)).toHaveLength(3))
+        expect(emails(container)).toEqual(['first@example.com', 'second@example.com', ''])
+    })
+
+    it('renders the actions slot for an empty array, so the first row can be added', async () => {
+        const { container } = renderControls({ contacts: [] })
+        expect(screen.getByText('No contacts yet')).toBeInTheDocument()
+        fireEvent.click(screen.getByText('Add (0)'))
+        await waitFor(() => expect(emails(container)).toHaveLength(1))
+        expect(screen.queryByText('No contacts yet')).not.toBeInTheDocument()
+    })
+
+    it('removes the row its control belongs to, not the last one', async () => {
+        const { container } = renderControls()
+        fireEvent.click(screen.getByText('Remove 0'))
+        await waitFor(() => expect(emails(container)).toEqual(['second@example.com']))
+    })
+
+    it('moves a row up', async () => {
+        const { container } = renderControls()
+        fireEvent.click(screen.getByText('Up 1'))
+        await waitFor(() =>
+            expect(emails(container)).toEqual(['second@example.com', 'first@example.com']),
+        )
+    })
+
+    it('moves a row down', async () => {
+        const { container } = renderControls()
+        fireEvent.click(screen.getByText('Down 0'))
+        await waitFor(() =>
+            expect(emails(container)).toEqual(['second@example.com', 'first@example.com']),
+        )
+    })
+
+    it('refuses to move the first row up', async () => {
+        // react-hook-form's move splices, and a target index of -1 splices the
+        // row back in before the LAST one - so an unguarded moveUp on row 0
+        // silently sends it to the end of a three-row array.
+        const { container } = renderControls(three)
+        fireEvent.click(screen.getByText('Up 0'))
+        await waitFor(() =>
+            expect(emails(container)).toEqual([
+                'first@example.com',
+                'second@example.com',
+                'third@example.com',
+            ]),
+        )
+    })
+
+    it('refuses to move the last row down', async () => {
+        // Past the end the same splice leaves an undefined hole where the row
+        // used to be, so the array grows a blank row nobody asked for.
+        const { container } = renderControls()
+        fireEvent.click(screen.getByText('Down 1'))
+        await waitFor(() =>
+            expect(emails(container)).toEqual(['first@example.com', 'second@example.com']),
+        )
+    })
+
+    it('tells each row whether it is the first or the last', () => {
+        const seen: string[] = []
+        render(
+            <BasicForm onSubmit={() => {}} validationSchema={schema} defaultValues={three as never}>
+                <FormFieldArray name="contacts">
+                    {({ index, isFirst, isLast }) => {
+                        seen.push(`${index}:${isFirst}:${isLast}`)
+                        return <span>{index}</span>
+                    }}
+                </FormFieldArray>
+            </BasicForm>,
+        )
+        expect(new Set(seen)).toEqual(new Set(['0:true:false', '1:false:false', '2:false:true']))
+    })
+
+    it('submits the rows in the order the controls left them', async () => {
+        const onSubmit = vi.fn()
+        const { container } = renderControls(two, onSubmit)
+        fireEvent.click(screen.getByText('Down 0'))
+        await waitFor(() =>
+            expect(emails(container)).toEqual(['second@example.com', 'first@example.com']),
+        )
+        fireEvent.click(screen.getByText('Send'))
+        await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+        expect(onSubmit.mock.calls[0][0].contacts.map((c: { email: string }) => c.email)).toEqual([
+            'second@example.com',
+            'first@example.com',
         ])
     })
 })

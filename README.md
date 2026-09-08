@@ -195,9 +195,39 @@ by the index, so a later reorder moves a row rather than retyping two of them.
 Errors land on the row's own path, and the required indicator now reads the schema through that
 path too, so a `min(1)` inside the element schema marks the field in every row.
 
-Adding, removing and reordering rows are yours for now, through react-hook-form's
-`useFieldArray` on the same name. Array shapes are a hand-written-schema feature: a config
-cannot express a repeated field yet.
+Add, remove and reorder come with the row. Each row carries `remove`, `moveUp` and `moveDown`,
+plus `isFirst` / `isLast` so a row knows which of the two to offer; the array as a whole gets an
+`actions` slot with `append` and `count`:
+
+```tsx
+<FormFieldArray
+    name="contacts"
+    actions={({ append }) => (
+        <button type="button" onClick={() => append({ email: '' })}>
+            Add contact
+        </button>
+    )}
+>
+    {({ name, remove, moveUp, isFirst }) => (
+        <>
+            <FormField name={`${name}.email`} type="email" label="Email" />
+            <button type="button" onClick={remove}>
+                Remove
+            </button>
+            <button type="button" onClick={moveUp} disabled={isFirst}>
+                Up
+            </button>
+        </>
+    )}
+</FormFieldArray>
+```
+
+The buttons are yours; the component supplies only the behaviour. `actions` renders in the empty
+state as well, because an add control that appears only once a row exists leaves an emptied array
+with no way back. A move past either end is refused rather than passed on. `append` takes the
+value a new row starts as - the component never sees the element schema, so it cannot invent one.
+
+Array shapes are a hand-written-schema feature: a config cannot express a repeated field yet.
 
 ### Known limitations
 - Hoist the config - an inline array literal re-derives defaults/schema each render.
