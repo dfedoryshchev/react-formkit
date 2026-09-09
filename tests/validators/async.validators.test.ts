@@ -17,6 +17,9 @@ const deferred = <T>() => {
 const firstError = (result: z.SafeParseReturnType<unknown, unknown>) =>
     result.success ? undefined : result.error.issues[0].message
 
+const issuePaths = (result: z.SafeParseReturnType<unknown, unknown>) =>
+    result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))
+
 beforeEach(() => {
     vi.useFakeTimers()
 })
@@ -487,6 +490,107 @@ describe('asyncCheck - pending channel', () => {
         slow.resolve(true)
         await pending
         expect(slowChannel.isPending()).toBe(false)
+    })
+})
+
+// Every public doc tells a consumer to hoist the schema to module scope, so one
+// `asyncCheck` instance landing on two fields is the shape the library asks for
+// rather than an exotic one.
+describe('asyncCheck - one instance on more than one field', () => {
+    const twoFields = (check: (value: string) => Promise<boolean>, delay = 50) => {
+        const emailCheck = asyncCheck(z.string(), check, { delay, message: 'taken' })
+        return { emailCheck, schema: z.object({ primary: emailCheck, backup: emailCheck }) }
+    }
+
+    it('asks about every field that shares the instance', async () => {
+        const check = vi.fn(async (value: string) => value !== 'taken@x.com')
+        const { schema } = twoFields(check)
+
+        const result = schema.safeParseAsync({ primary: 'taken@x.com', backup: 'free@x.com' })
+        await vi.advanceTimersByTimeAsync(60)
+        await result
+
+        expect(check).toHaveBeenCalledTimes(2)
+        expect(check).toHaveBeenCalledWith('taken@x.com')
+        expect(check).toHaveBeenCalledWith('free@x.com')
+    })
+
+    it('does not let an accepted field carry a rejected one through', async () => {
+        const check = vi.fn(async (value: string) => value !== 'taken@x.com')
+        const { schema } = twoFields(check)
+
+        const result = schema.safeParseAsync({ primary: 'taken@x.com', backup: 'free@x.com' })
+        await vi.advanceTimersByTimeAsync(60)
+
+        expect(issuePaths(await result)).toEqual(['primary'])
+    })
+
+    it('rejects both fields when both values are taken', async () => {
+        const check = vi.fn(async () => false)
+        const { schema } = twoFields(check)
+
+        const result = schema.safeParseAsync({ primary: 'one@x.com', backup: 'two@x.com' })
+        await vi.advanceTimersByTimeAsync(60)
+
+        expect(issuePaths(await result)).toEqual(['primary', 'backup'])
+    })
+
+    it('caches each field verdict separately, so submit re-parses for free', async () => {
+        const check = vi.fn(async (value: string) => value !== 'taken@x.com')
+        const { schema } = twoFields(check)
+
+        const first = schema.safeParseAsync({ primary: 'taken@x.com', backup: 'free@x.com' })
+        await vi.advanceTimersByTimeAsync(60)
+        await first
+
+        const resubmit = await schema.safeParseAsync({
+            primary: 'taken@x.com',
+            backup: 'free@x.com',
+        })
+
+        expect(issuePaths(resubmit)).toEqual(['primary'])
+        expect(check).toHaveBeenCalledTimes(2)
+    })
+
+    it('waits per field rather than for whichever field parsed last', async () => {
+        const gate = deferred<boolean>()
+        const check = vi.fn((value: string) =>
+            value === 'slow@x.com' ? gate.promise : Promise.resolve(true),
+        )
+        const { emailCheck, schema } = twoFields(check)
+        const primary = getAsyncCheckChannel(emailCheck, 'primary')!
+        const backup = getAsyncCheckChannel(emailCheck, 'backup')!
+
+        const result = schema.safeParseAsync({ primary: 'slow@x.com', backup: 'free@x.com' })
+        await vi.advanceTimersByTimeAsync(60)
+
+        expect(backup.isPending()).toBe(false)
+        expect(primary.isPending()).toBe(true)
+
+        gate.resolve(true)
+        await result
+        expect(primary.isPending()).toBe(false)
+    })
+
+    it('gives every row of a field array its own wait', async () => {
+        const gate = deferred<boolean>()
+        const check = vi.fn((value: string) =>
+            value === 'slow' ? gate.promise : Promise.resolve(true),
+        )
+        const nameCheck = asyncCheck(z.string(), check, { delay: 50 })
+        const schema = z.object({ rows: z.array(z.object({ username: nameCheck })) })
+        const first = getAsyncCheckChannel(nameCheck, 'rows.0.username')!
+        const second = getAsyncCheckChannel(nameCheck, 'rows.1.username')!
+
+        const result = schema.safeParseAsync({ rows: [{ username: 'slow' }, { username: 'fast' }] })
+        await vi.advanceTimersByTimeAsync(60)
+
+        expect(second.isPending()).toBe(false)
+        expect(first.isPending()).toBe(true)
+
+        gate.resolve(true)
+        await result
+        expect(first.isPending()).toBe(false)
     })
 })
 

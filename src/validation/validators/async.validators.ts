@@ -22,24 +22,25 @@ export interface AsyncCheckChannel {
     subscribe: (listener: () => void) => () => void
 }
 
-// The channel belongs to the validator instance, not to a field name: the
-// factory has no idea what the field ends up being called, and two forms may
-// both have a `username`. Keying it off the schema `asyncCheck` returns means
-// the handle is the one the form already publishes on
-// `ValidationSchemaContext`, and nothing has to be registered or torn down.
-const channels = new WeakMap<object, AsyncCheckChannel>()
+// Keyed off the schema `asyncCheck` returns, so the handle is the one the form
+// already publishes on `ValidationSchemaContext` and nothing has to be
+// registered or torn down. The validator instance is only half the address: the
+// same instance can sit on two fields, so the lookup takes the field path too.
+const channels = new WeakMap<object, (path: string) => AsyncCheckChannel>()
 
 /**
- * The pending channel of an `asyncCheck` schema, or `undefined` for anything
- * else. In a component, prefer `useIsAsyncValidating`, which finds the field's
- * schema and subscribes for you.
+ * The pending channel of an `asyncCheck` schema for one field, or `undefined`
+ * for anything else. `path` is the name react-hook-form uses for the field
+ * (`username`, `contacts.0.email`); the default addresses a schema being parsed
+ * on its own rather than as a member of an object. In a component, prefer
+ * `useIsAsyncValidating`, which finds the field's schema and subscribes for you.
  *
  * Zod methods that clone rather than wrap - `.describe()` among them - produce
  * a new instance the channel is not attached to, so apply them to the base
  * schema and keep `asyncCheck` outermost.
  */
-export const getAsyncCheckChannel = (schema: unknown): AsyncCheckChannel | undefined =>
-    typeof schema === 'object' && schema !== null ? channels.get(schema) : undefined
+export const getAsyncCheckChannel = (schema: unknown, path = ''): AsyncCheckChannel | undefined =>
+    typeof schema === 'object' && schema !== null ? channels.get(schema)?.(path) : undefined
 
 const DEFAULT_DELAY = 300
 
@@ -60,6 +61,21 @@ const createDeferred = (): Deferred => {
     return { promise, resolve }
 }
 
+interface FieldState {
+    timer: ReturnType<typeof setTimeout> | undefined
+    // One deferred is shared by every parse waiting on the current window, so
+    // they all receive the verdict for the value that window ends on. That is
+    // what makes the order they complete in stop mattering: an old parse can no
+    // longer answer for a value the field has already left.
+    waiting: Deferred | null
+    latest: unknown
+    round: number
+    settled: { value: unknown; ok: boolean } | undefined
+    listeners: Set<() => void>
+    isPending: boolean
+    channel: AsyncCheckChannel
+}
+
 /**
  * Wraps a schema in a debounced asynchronous check.
  *
@@ -69,10 +85,12 @@ const createDeferred = (): Deferred => {
  *
  * The debounce state lives in this closure rather than in React, because
  * validator factories run while the schema is built, outside rendering, and
- * there is no hook to reach from there. One `asyncCheck` call is therefore one
- * debounce channel: keep the schema stable (module scope, or the builder that
- * `BasicForm` memoises) or every render hands the field a fresh channel that
- * has never seen a keystroke.
+ * there is no hook to reach from there. It is kept per FIELD PATH rather than
+ * per call: one validator hoisted to module scope is the shape every doc here
+ * recommends, and the same instance then lands on every field that reuses it -
+ * two addresses on one form, or one row of a field array per index. Keep the
+ * schema stable (module scope, or the builder that `BasicForm` memoises) or
+ * every render hands the field a fresh channel that has never seen a keystroke.
  */
 export const asyncCheck = <T extends ZodTypeAny>(
     base: T,
@@ -81,50 +99,56 @@ export const asyncCheck = <T extends ZodTypeAny>(
 ): ZodEffects<T, T['_output'], T['_input']> => {
     const { delay = DEFAULT_DELAY, message = getMessages().asyncCheck } = options
 
-    let timer: ReturnType<typeof setTimeout> | undefined
-    // One deferred is shared by every parse waiting on the current window, so
-    // they all receive the verdict for the value that window ends on. That is
-    // what makes the order they complete in stop mattering: an old parse can no
-    // longer answer for a value the field has already left.
-    let waiting: Deferred | null = null
-    let latest: unknown
-    let round = 0
-    let settled: { value: unknown; ok: boolean } | undefined
+    const fields = new Map<string, FieldState>()
 
-    // The wait, published. It tracks the deferred rather than the request: a
-    // keystroke that re-arms the window keeps one uninterrupted wait, which is
-    // what a debounced field should show, and the cached and blank paths never
-    // start one because they never make the field wait.
-    const listeners = new Set<() => void>()
-    let isPending = false
+    const stateFor = (path: string): FieldState => {
+        const found = fields.get(path)
+        if (found) return found
 
-    const setIsPending = (next: boolean): void => {
-        if (next === isPending) return
-        isPending = next
-        for (const listener of listeners) listener()
+        const state: FieldState = {
+            timer: undefined,
+            waiting: null,
+            latest: undefined,
+            round: 0,
+            settled: undefined,
+            listeners: new Set(),
+            isPending: false,
+            // The wait, published. It tracks the deferred rather than the
+            // request: a keystroke that re-arms the window keeps one
+            // uninterrupted wait, which is what a debounced field should show,
+            // and the cached and blank paths never start one because they never
+            // make the field wait.
+            channel: {
+                isPending: () => state.isPending,
+                subscribe: (listener) => {
+                    state.listeners.add(listener)
+                    return () => {
+                        state.listeners.delete(listener)
+                    }
+                },
+            },
+        }
+        fields.set(path, state)
+        return state
     }
 
-    const channel: AsyncCheckChannel = {
-        isPending: () => isPending,
-        subscribe: (listener) => {
-            listeners.add(listener)
-            return () => {
-                listeners.delete(listener)
-            }
-        },
+    const setIsPending = (state: FieldState, next: boolean): void => {
+        if (next === state.isPending) return
+        state.isPending = next
+        for (const listener of state.listeners) listener()
     }
 
     // `ok === undefined` means the check failed rather than returned a verdict.
-    const finish = (mine: number, value: unknown, ok?: boolean): void => {
+    const finish = (state: FieldState, mine: number, value: unknown, ok?: boolean): void => {
         // A newer check has launched, or a newer window is still counting down.
         // Either way that round owns the answer; dropping this one is what
         // stops a late result about an abandoned value from clearing or
         // inventing an error on the value now in the field.
-        if (mine !== round || timer !== undefined) return
-        if (ok !== undefined) settled = { value, ok }
-        const pending = waiting
-        waiting = null
-        setIsPending(false)
+        if (mine !== state.round || state.timer !== undefined) return
+        if (ok !== undefined) state.settled = { value, ok }
+        const pending = state.waiting
+        state.waiting = null
+        setIsPending(state, false)
         // Fail open: a transport failure is not a verdict, and the server is
         // the authority at submit anyway. Nothing is cached, so the next parse
         // asks again.
@@ -136,37 +160,37 @@ export const asyncCheck = <T extends ZodTypeAny>(
     // deferred: cancelling without releasing it would leave that `parseAsync`
     // unsettled forever. Release it as acceptable - the base schema owns the
     // empty case.
-    const cancel = (): void => {
-        if (timer !== undefined) {
-            clearTimeout(timer)
-            timer = undefined
+    const cancel = (state: FieldState): void => {
+        if (state.timer !== undefined) {
+            clearTimeout(state.timer)
+            state.timer = undefined
         }
-        const pending = waiting
-        waiting = null
-        setIsPending(false)
+        const pending = state.waiting
+        state.waiting = null
+        setIsPending(state, false)
         pending?.resolve(true)
     }
 
-    const run = (): void => {
-        timer = undefined
-        const value = latest
-        const mine = (round += 1)
-        if (settled && Object.is(settled.value, value)) {
-            finish(mine, value, settled.ok)
+    const run = (state: FieldState): void => {
+        state.timer = undefined
+        const value = state.latest
+        const mine = (state.round += 1)
+        if (state.settled && Object.is(state.settled.value, value)) {
+            finish(state, mine, value, state.settled.ok)
             return
         }
         Promise.resolve(check(value)).then(
-            (ok) => finish(mine, value, ok),
-            () => finish(mine, value, undefined),
+            (ok) => finish(state, mine, value, ok),
+            () => finish(state, mine, value, undefined),
         )
     }
 
-    const ask = (value: unknown): Promise<boolean> => {
+    const ask = (state: FieldState, value: unknown): Promise<boolean> => {
         // Submit re-parses the whole form. Without this the field would sit out
         // another quiet period, and a second request, for a value already
         // answered.
-        if (!waiting && settled && Object.is(settled.value, value)) {
-            return Promise.resolve(settled.ok)
+        if (!state.waiting && state.settled && Object.is(state.settled.value, value)) {
+            return Promise.resolve(state.settled.ok)
         }
         // The parse that reaches this field is the parse of the whole schema,
         // so a change to any other field asks about this one too, with a value
@@ -175,28 +199,29 @@ export const asyncCheck = <T extends ZodTypeAny>(
         // request already in flight for the same value behind the timer guard
         // in `finish`, buying a duplicate request and an indicator that cannot
         // clear. Only a change to this value is a reason to start over.
-        if (waiting && Object.is(latest, value)) return waiting.promise
-        latest = value
-        if (!waiting) waiting = createDeferred()
-        const pending = waiting
-        if (timer !== undefined) clearTimeout(timer)
-        timer = setTimeout(run, delay)
-        setIsPending(true)
+        if (state.waiting && Object.is(state.latest, value)) return state.waiting.promise
+        state.latest = value
+        if (!state.waiting) state.waiting = createDeferred()
+        const pending = state.waiting
+        if (state.timer !== undefined) clearTimeout(state.timer)
+        state.timer = setTimeout(() => run(state), delay)
+        setIsPending(state, true)
         return pending.promise
     }
 
     const schema = base.superRefine(async (value, ctx) => {
+        const state = stateFor(ctx.path.join('.'))
         // A failed string check leaves zod's status dirty, not aborted, so the
         // refinement still runs for an empty field; without this every untouched
         // required field would fire a request.
         if (isBlank(value)) {
-            cancel()
+            cancel(state)
             return
         }
-        if (await ask(value)) return
+        if (await ask(state, value)) return
         ctx.addIssue({ code: z.ZodIssueCode.custom, message })
     })
 
-    channels.set(schema, channel)
+    channels.set(schema, (path) => stateFor(path).channel)
     return schema
 }

@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { z } from 'zod'
 import { useFormContext } from 'react-hook-form'
 import { BasicForm } from '../../src/form'
-import { FormField } from '../../src/field'
+import { FormField, FormFieldArray } from '../../src/field'
 import { asyncCheck } from '../../src/validation/validators/async.validators'
 import { required } from '../../src/validation/validators/common.validators'
 import { useIsAsyncValidating } from '../../src/validation/useIsAsyncValidating'
@@ -178,6 +178,100 @@ describe('debounced async validation through the form', () => {
         await waitFor(() => expect(waiting('username')).toBe('false'))
         expect(check).toHaveBeenCalledTimes(1)
         expect(check).toHaveBeenCalledWith('ada')
+    })
+})
+
+const RowWaiting = ({ index, name }: { index: number; name: string }) => (
+    <span data-testid={`row-${index}`}>{String(useIsAsyncValidating(name))}</span>
+)
+
+// The reproduction that started this: one hoisted validator on two fields, one
+// taken value and one free one.
+describe('one async validator shared by two fields', () => {
+    const renderSharedCheck = (check: (value: string) => Promise<boolean>, onSubmit = vi.fn()) => {
+        const emailCheck = asyncCheck(required(), check, { delay: 10, message: TAKEN })
+        const schema = z.object({ primary: emailCheck, backup: emailCheck })
+        render(
+            <BasicForm
+                onSubmit={onSubmit}
+                validationSchema={schema}
+                defaultValues={{ primary: 'taken@x.com', backup: 'free@x.com' }}
+                mode="onChange"
+            >
+                <FormField name="primary" type="text" label="Primary" />
+                <FormField name="backup" type="text" label="Backup" />
+                <Waiting name="primary" />
+                <Waiting name="backup" />
+                <button type="submit">Submit</button>
+            </BasicForm>,
+        )
+        return { onSubmit }
+    }
+
+    it('refuses submit while one of the two values is taken', async () => {
+        const check = vi.fn(async (value: string) => value !== 'taken@x.com')
+        const { onSubmit } = renderSharedCheck(check)
+
+        fireEvent.click(screen.getByText('Submit'))
+
+        await waitFor(() => expect(screen.getByText(TAKEN)).toBeInTheDocument())
+        expect(onSubmit).not.toHaveBeenCalled()
+        expect(check).toHaveBeenCalledWith('taken@x.com')
+        expect(check).toHaveBeenCalledWith('free@x.com')
+    })
+
+    it('marks only the row whose check is still out', async () => {
+        const gate = deferred<boolean>()
+        const check = vi.fn((value: string) =>
+            value === 'slow' ? gate.promise : Promise.resolve(true),
+        )
+        const schema = z.object({
+            rows: z.array(z.object({ username: asyncCheck(required(), check, { delay: 10 }) })),
+        })
+        render(
+            <BasicForm
+                onSubmit={vi.fn()}
+                validationSchema={schema}
+                defaultValues={{ rows: [{ username: 'slow' }, { username: 'fast' }] }}
+                mode="onChange"
+            >
+                <FormFieldArray name="rows">
+                    {({ name, index }) => (
+                        <>
+                            <FormField name={`${name}.username`} type="text" label="Username" />
+                            <RowWaiting index={index} name={`${name}.username`} />
+                        </>
+                    )}
+                </FormFieldArray>
+                <button type="submit">Submit</button>
+            </BasicForm>,
+        )
+
+        fireEvent.click(screen.getByText('Submit'))
+
+        await waitFor(() => expect(check).toHaveBeenCalledWith('fast'))
+        await waitFor(() => expect(screen.getByTestId('row-1')).toHaveTextContent('false'))
+        expect(screen.getByTestId('row-0')).toHaveTextContent('true')
+
+        gate.resolve(true)
+        await waitFor(() => expect(screen.getByTestId('row-0')).toHaveTextContent('false'))
+    })
+
+    it('marks only the field whose check is still out', async () => {
+        const gate = deferred<boolean>()
+        const check = vi.fn((value: string) =>
+            value === 'taken@x.com' ? gate.promise : Promise.resolve(true),
+        )
+        renderSharedCheck(check)
+
+        fireEvent.click(screen.getByText('Submit'))
+
+        await waitFor(() => expect(check).toHaveBeenCalledWith('free@x.com'))
+        await waitFor(() => expect(waiting('backup')).toBe('false'))
+        expect(waiting('primary')).toBe('true')
+
+        gate.resolve(true)
+        await waitFor(() => expect(waiting('primary')).toBe('false'))
     })
 })
 

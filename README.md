@@ -233,7 +233,6 @@ Array shapes are a hand-written-schema feature: a config cannot express a repeat
 - Hoist the config - an inline array literal re-derives defaults/schema each render.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
 - No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
-- `useIsAsyncValidating` does not resolve a field inside an array. One `asyncCheck` is shared by every row, so the pending state would be shared too.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
 

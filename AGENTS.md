@@ -114,9 +114,9 @@ and finding a way for a data-only `ValidationDescriptor` to name a function.
 
 **A debounced validator holds its state in the closure it was built with.** Same reason as the
 message map: the factory runs at schema-build time, outside React, so there is no ref or state to
-put it in. One `asyncCheck` call is one debounce channel, which makes a stable schema a
-correctness requirement rather than an optimisation - a schema rebuilt each render restarts the
-window each render and it never elapses.
+put it in. One `asyncCheck` call is one debounce channel PER FIELD PATH, which makes a stable
+schema a correctness requirement rather than an optimisation - a schema rebuilt each render
+restarts the window each render and it never elapses.
 
 **Only a change to the value re-arms that window.** The refinement does not see keystrokes, it sees
 parses, and under a resolver the parse is the whole schema - so editing any other field runs it
@@ -127,10 +127,14 @@ so the answer is discarded and re-requested. `ask` compares against `latest` and
 wait when the value is unchanged. Anything added there has to keep that comparison ahead of the
 re-arm.
 
-**The pending state of an async check is keyed off the schema instance, not off a field name.**
-`asyncCheck` cannot know what the field will be called and two forms may both have a `username`, so
-the channel `useIsAsyncValidating` subscribes to lives in a `WeakMap` keyed by the schema the factory
-returned; the hook finds it by walking the shape in `ValidationSchemaContext`, the same context
+**The state of an async check is keyed off the schema instance AND the field path, and it needs
+both.** The instance alone is not an address: every doc here tells consumers to hoist the schema,
+so one validator routinely sits on two fields or on every row of an array, and one set of
+`latest`/`waiting`/`timer` behind two fields lets one field's verdict answer for the other - the
+rejected value submits. The path alone is not an address either, since two forms may both have a
+`username`. So the `WeakMap` `useIsAsyncValidating` subscribes through is keyed by the schema the
+factory returned and hands back a channel per path, while the refinement reads its own path off
+`ctx.path`; the hook finds the node with `fieldAt` over `ValidationSchemaContext`, the same context
 `useIsFieldRequired` reads. The consequence to keep in mind: zod methods that clone rather than wrap
 (`.describe()` builds `new This({ ...this._def })`) return an instance the channel is not attached
 to. Wrapping is safe - `unwrapField` in `schema.utils.ts` peels `ZodEffects`, `ZodOptional`,
@@ -159,11 +163,10 @@ also why an index past the end, which happens for one render after a row is remo
 resolves. The cost of the walk is that a literal field name containing a dot is no longer
 findable, which react-hook-form does not allow anyway.
 
-**`useIsAsyncValidating` deliberately still does NOT walk a path.** Giving it `fieldAt` would
-make it resolve `contacts.0.username`, and the channel it found would be the same object for
-every row - verified: two rows of one element schema return one identical channel - so every
-row's indicator would light at once. It is false today, which is wrong in a quieter way. Fix the
-per-field state in `asyncCheck` first.
+**`useIsAsyncValidating` walks the path, and the path is also what addresses the wait.** Two rows
+of one element schema are one identical schema node - verified - so the node alone cannot tell
+them apart and asking it for a channel would light every row's indicator at once. The channel is
+looked up by schema node *and* field path, which is the same pair `asyncCheck` keys its state on.
 
 **Config conditionals clear; hand-written ones do not, by default.** A `showWhen` field in a
 config is validated only while visible and its value is dropped when it hides. The standalone

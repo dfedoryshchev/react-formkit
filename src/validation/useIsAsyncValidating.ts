@@ -1,7 +1,7 @@
 import { useMemo, useSyncExternalStore } from 'react'
 import { ZodSchema } from 'zod'
 import { useValidationSchema } from './ValidationSchemaContext'
-import { unwrapField, unwrapObject } from './schema.utils'
+import { fieldAt, unwrapField } from './schema.utils'
 import { AsyncCheckChannel, getAsyncCheckChannel } from './validators/async.validators'
 
 // `asyncCheck` usually is the field schema, but `.optional()` and a further
@@ -10,12 +10,13 @@ const findChannel = (
     schema: ZodSchema | undefined,
     fieldName: string,
 ): AsyncCheckChannel | undefined => {
-    const object = schema && unwrapObject(schema)
-    if (!object) return undefined
+    if (!schema) return undefined
 
-    let current: unknown = object.shape[fieldName]
+    let current: unknown = fieldAt(schema, fieldName)
     while (current) {
-        const channel = getAsyncCheckChannel(current)
+        // Every row of a field array shares one element schema, so the schema
+        // node cannot tell the rows apart; the path is what addresses the wait.
+        const channel = getAsyncCheckChannel(current, fieldName)
         if (channel) return channel
         current = unwrapField(current)
     }

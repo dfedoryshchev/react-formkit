@@ -204,13 +204,12 @@ control that appears only once a row exists leaves an emptied array with no way 
 A move past either end is refused rather than passed to react-hook-form, so `disabled` on those
 buttons is presentation and not the guard.
 
-Two things it deliberately does not do:
+One thing it deliberately does not do: **no config support.** A repeated field cannot be expressed
+in a `FormConfig` yet, so this is the hand-written-schema entry point only.
 
-- **No config support.** A repeated field cannot be expressed in a `FormConfig` yet, so this is
-  the hand-written-schema entry point only.
-- **No pending indicator inside a row.** `useIsAsyncValidating` does not resolve a path into an
-  array, and it should not until `asyncCheck` keeps state per field - one `asyncCheck` in an
-  element schema is one channel shared by every row.
+`useIsAsyncValidating` resolves a row's path, so a row whose element schema carries an `asyncCheck`
+gets its own pending indicator: call it with the row's own field name, built from `row.name` the
+same way the field is.
 
 ## Validation
 
