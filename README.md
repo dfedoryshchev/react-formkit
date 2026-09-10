@@ -8,9 +8,14 @@ React + TypeScript form component library built on React Hook Form and Zod.
 npm install react-formkit
 # peer dependencies
 npm install react react-dom react-hook-form @hookform/resolvers zod
-# optional, only if you use the multiselect / phone controls
+# also required: the package root imports the multiselect and phone controls
 npm install react-select react-phone-input-2
 ```
+
+`react-select` and `react-phone-input-2` are not optional. Everything is exported from the
+package root, and that barrel imports `MultiSelectInput` and `PhoneInput` at the top level, so
+importing anything at all from `react-formkit` resolves both - including a form that uses
+neither control.
 
 ## Architecture
 
@@ -128,7 +133,8 @@ Describe a form as data and render it from a config array:
 ```tsx
 import { Form, useFormFromConfig, ConfigFields, FormConfig } from 'react-formkit'
 
-// hoist the config (module scope or memo) so it is not re-derived each render
+// keep the config at module scope: it is fine for the array identity to change,
+// but a rule edited in place will not reach the schema - see below
 const config: FormConfig = [
     { name: 'fullName', type: 'text', label: 'Full name', validation: ['required', { rule: 'minLength', value: 2 }] },
     { name: 'email', type: 'email', label: 'Email', validation: ['required', { rule: 'email' }] },
@@ -146,6 +152,38 @@ function SignupForm() {
 ```
 
 `useFormFromConfig` derives the default values and a Zod schema from the config; `ConfigFields` renders the controls onto the native Field/Control stack.
+
+### What the config is keyed on
+
+The defaults and the schema are memoised on a signature built from the field names and types
+only, so an inline array literal does *not* rebuild them on every render. Hoisting the config no
+longer buys any speed. What it costs instead is a staleness rule worth knowing before you
+generate a config at runtime.
+
+**An edit that changes neither a name nor a type does not reach the schema or the defaults.**
+Tightening `minLength` from 2 to 8, swapping a `message`, adding a `required`, or changing a
+`defaultValue` all leave the signature identical, so the memo hands back the schema it built the
+first time and a value the config now rejects still submits. Changing a field's `name` or `type`,
+or adding or removing a field, does refresh both.
+
+The rest of the config is read fresh on every render, because `fields` is the array you passed
+straight back: `label`, `placeholder`, `options`, `disabled` and `showWhen` are live and need no
+signature change to take effect. It is only the two derived values that are cached.
+
+So a config that changes shape at runtime is fine. A config whose *rules* change while its shape
+stays put is the case to avoid - give a field a new name, or key the component on the config
+version, so the signature moves with the rules.
+
+**Duplicate field names throw.** A repeated `name` would last-win in both the defaults and the
+schema, so it is rejected instead:
+
+```
+Error: useFormFromConfig: duplicate field name(s): email
+```
+
+Every repeated name is listed, comma-separated. This throws during render rather than warning,
+so a config assembled from more than one source is worth de-duplicating before it reaches the
+hook.
 
 ### Conditional fields
 
@@ -230,7 +268,8 @@ value a new row starts as - the component never sees the element schema, so it c
 Array shapes are a hand-written-schema feature: a config cannot express a repeated field yet.
 
 ### Known limitations
-- Hoist the config - an inline array literal re-derives defaults/schema each render.
+- The config's defaults and schema are memoised on field names and types, so a rule or a `defaultValue` edited without renaming or retyping its field does not reach them.
+- Duplicate field names in a config throw rather than resolving to the last one.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
 - No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.

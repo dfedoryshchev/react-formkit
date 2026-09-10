@@ -58,13 +58,32 @@ control; it is the same pipeline without the button.
 
 ## Mistakes to avoid
 
-**Hoist the config.** An inline array literal passed to `useFormFromConfig` re-derives the
-default values and the Zod schema on every render. Put it at module scope, or memoise it.
+**Do not edit a config rule in place and expect the schema to follow.** `useFormFromConfig`
+memoises the defaults and the schema on a signature made of the field names and types, so an
+inline array literal is *not* a performance problem - it is a correctness one in the opposite
+direction. An edit that leaves every name and type alone is invisible to the memo:
 
 ```tsx
-// wrong - new array identity every render
-const { fields, schema } = useFormFromConfig([{ name: 'a', type: 'text' }])
+// the schema keeps min(2); a 3-character value still passes
+const config = tightened ? [{ name: 'nick', type: 'text', validation: [{ rule: 'minLength', value: 8 }] }]
+                         : [{ name: 'nick', type: 'text', validation: [{ rule: 'minLength', value: 2 }] }]
 ```
+
+Changing a `name` or a `type`, or adding or removing a field, refreshes both. Changing a
+`validation` entry, a `message` or a `defaultValue` does not. Generate configs whose shape
+carries their rules, or move the component onto a new `key` when the rules change.
+
+`label`, `placeholder`, `options`, `disabled` and `showWhen` are exempt - `fields` is the array
+handed straight back, so those are read fresh every render.
+
+**Do not repeat a field name in a config.** `useFormFromConfig` throws during render rather than
+letting the later field last-win over the earlier one in both the defaults and the schema:
+
+```
+Error: useFormFromConfig: duplicate field name(s): email
+```
+
+De-duplicate a config assembled from more than one source before passing it in.
 
 **Do not expect a React provider to change validation messages.** Validators run when the
 schema is built, outside rendering, so by the time React renders, the strings are already inside
@@ -317,4 +336,8 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
   `useFormLevelValidators` apply to a hand-written schema only.
 - `required` is not enforced across every field type, and non-required fields are not made optional.
 - A hidden conditional field is absent from the submitted values rather than present and empty.
+- A config's defaults and schema are cached against its field names and types, so a rule changed
+  without a rename or a retype does not reach them, and duplicate names throw.
+- `react-select` and `react-phone-input-2` are reached from the package root barrel, so both have
+  to be installed even by an app that uses neither the multiselect nor the phone control.
 - Type declarations are not generated yet, so there are no `.d.ts` files in the published package.

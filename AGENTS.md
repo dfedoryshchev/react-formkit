@@ -19,9 +19,10 @@ npm run build      # library build
 npm run format     # prettier over src
 ```
 
-**A change is not done until `npm test`, `npm run typecheck` and `npm run lint` all pass.** CI
+**A change is not done until `npm run lint`, `npm run typecheck` and `npm test` all pass.** CI
 runs exactly those three, in that order, on Node 20 (`.github/workflows/ci.yml`), so a green
-local run and a green CI run mean the same thing. `npm run build` is not in CI; run it anyway
+local run and a green CI run mean the same thing. Lint is first there, so a formatting slip
+fails the job before any test has run. `npm run build` is not in CI; run it anyway
 when you touch anything under `src/`, because the library build resolves the `@/` alias
 differently from `tsc` and is the only step that would catch a bad import path.
 
@@ -174,14 +175,42 @@ config is validated only while visible and its value is dropped when it hides. T
 should keep what was typed into it. Do not quietly align the two: they are different defaults on
 purpose.
 
-**Configs must be hoisted by the consumer.** An inline array literal re-derives defaults and
-schema on every render. The README says so; keep any new config-facing API honest about it
-rather than adding memoisation that hides the cost.
+**The config memo is keyed on names and types, and the signature is the whole contract.**
+`useFormFromConfig` builds `${name}:${type}` per field, joins it, and uses that as the dep for
+both the defaults and the schema, so an inline array literal costs nothing. The price is paid on
+the other side: a rule, a `message` or a `defaultValue` changed without a rename or a retype is
+invisible to the memo, and the form keeps validating against the schema it built first. That
+trade is deliberate and documented for consumers - do not quietly widen the signature to cover
+`validation` without pricing what it costs an inline literal, and do not narrow it back to the
+array reference either.
+
+`fields` is returned as the caller's own array rather than a memoised copy, which is what keeps
+`label`, `options`, `disabled` and `showWhen` live. `ConfigFields` keys its children on
+`field.name`, so the changing array identity does not remount anything. A change that starts
+memoising `fields` breaks the live half and buys nothing.
+
+**A duplicate field name is a throw, not a warning.** Names are checked before either memo, so it
+throws on the first render: `useFormFromConfig: duplicate field name(s): <names>`. The reason it
+cannot be a last-wins is that the defaults and the schema would disagree about which field won.
+Anything that starts accepting duplicates needs an answer for both.
 
 ## Tests
 
-Vitest with jsdom; `tests/setup.ts` pulls in `@testing-library/jest-dom`. `tests/` mirrors
-`src/` by area, and a new test belongs in the existing file for its area when one exists.
+Vitest. **The default environment is `node`, not jsdom** (`vitest.config.ts`), because most of
+the suite does not need a DOM and node starts faster. A file that renders opts in with a docblock
+on its **first line**, above the imports:
+
+```tsx
+// @vitest-environment jsdom
+import { render, screen } from '@testing-library/react'
+```
+
+Without it the first `render` fails with `document is not defined`, which reads like a broken
+setup and is not one. `tests/setup.ts` pulls in `@testing-library/jest-dom` for every file either
+way. Files run sequentially (`fileParallelism: false`) to avoid jsdom worker-timeout flakiness.
+
+`tests/` mirrors `src/` by area, and a new test belongs in the existing file for its area when
+one exists.
 
 **Write the failing test first and check that it fails for the reason you think.** A test
 written after the change passes for reasons nobody has verified. When a change could plausibly

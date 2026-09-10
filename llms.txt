@@ -5,8 +5,9 @@
 > required indicators, the validation messages and the rendered controls from that single
 > declaration.
 
-Version 0.2.1, MIT. Built against React 19, react-hook-form 7, @hookform/resolvers 5 and zod 3;
-`react-select` and `react-phone-input-2` are needed only for the multiselect and phone controls.
+Version 0.2.1, MIT. Built against React 19, react-hook-form 7, @hookform/resolvers 5 and zod 3.
+`react-select` and `react-phone-input-2` back the multiselect and phone controls, but the package
+root imports both at the top level, so they have to be installed even by an app that uses neither.
 Type declarations are not generated yet, so the published package ships without `.d.ts` files.
 
 Two ways to build a form, sharing one runtime:
@@ -69,6 +70,15 @@ Everything is exported from the package root; there are no deep import paths.
 - [src/config/buildSchema.ts](src/config/buildSchema.ts): turns `ValidationDescriptor[]` into a
   Zod schema. An explicit `message` on a descriptor wins; otherwise the message map supplies the
   default. A `showWhen` field is validated only while its condition holds.
+- [src/config/useFormFromConfig.ts](src/config/useFormFromConfig.ts): derives the defaults and the
+  schema, **memoised on a signature of field names and types**, so an inline config array literal
+  is not a performance problem. **The trap is the inverse: a `validation` entry, a `message` or a
+  `defaultValue` changed without renaming or retyping its field does not reach the schema or the
+  defaults**, and the form keeps validating against the first build. Adding, removing, renaming or
+  retyping a field does refresh them. `label`, `placeholder`, `options`, `disabled` and `showWhen`
+  are read fresh each render, because `fields` is the caller's own array handed back. A duplicate
+  `name` throws during render - `useFormFromConfig: duplicate field name(s): <names>` - rather than
+  letting the last field win in the defaults and the schema separately.
 - [src/field/ConditionalField.tsx](src/field/ConditionalField.tsx): conditions are `is`, `isNot`
   or a `test` predicate. In a config, a hidden field's value is dropped; with the standalone
   component, clearing is opt-in via `clear`.
