@@ -56,6 +56,38 @@ fields.
 `Form` includes a loading-aware submit button. Use `BasicForm` when you supply your own submit
 control; it is the same pipeline without the button.
 
+## What the form does while it submits, and once it has
+
+Both sides of a submit are props, on `Form` and on `BasicForm` alike:
+
+```tsx
+<Form
+    onSubmit={createOrder}
+    onSuccess={(order, values) => track('order-created', order.id, values.email)}
+    successContent={<p>Thanks - your order is on its way.</p>}
+    loadingOverlay
+>
+    <FormField name="email" type="email" label="Email" />
+</Form>
+```
+
+- `loadingOverlay` blocks the form while the handler is in flight. It paints above the form's
+  own positioned content, takes the form out of pointer events, and holds keyboard focus until
+  it closes, when focus returns to the control that had it.
+- `onSuccess(result, data)` runs once `onSubmit` has resolved. `result` is whatever `onSubmit`
+  returned, so an API response reaches the next step without a second source of truth for it.
+- `successContent` renders once a submit has succeeded, in place of the form. Add
+  `keepFormOnSuccess` to keep the form and put the content beside it.
+
+**Neither side runs on a failed submit.** A schema error never reaches `onSubmit`, and a handler
+that throws leaves both untouched. So do not wrap the body of `onSubmit` in a `try/catch` that
+swallows the error - that is the one way to make `successContent` announce something that did
+not happen.
+
+**The success content is not a permanent state.** It shows from the submit that succeeded until
+the next submit is in flight, and returns when that one succeeds. A form that leaves the page on
+success should navigate from `onSuccess` rather than rely on the content staying put.
+
 ## Mistakes to avoid
 
 **Do not edit a config rule in place and expect the schema to follow.** `useFormFromConfig`
@@ -341,3 +373,5 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
 - `react-select` and `react-phone-input-2` are reached from the package root barrel, so both have
   to be installed even by an app that uses neither the multiselect nor the phone control.
 - Type declarations are not generated yet, so there are no `.d.ts` files in the published package.
+- The loading overlay's styling is inline, `z-index: 10` included, so a `.fk-form-loading-overlay`
+  rule can add to it but cannot restyle what is already set there.

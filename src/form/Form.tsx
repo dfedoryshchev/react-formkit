@@ -6,13 +6,16 @@ import withSubmitButton from './withSubmitButton'
 import { MessageOverrides } from '@/validation/messages'
 
 interface FormProps {
-    onSubmit: (data: any) => void
+    onSubmit: (data: any) => any
     validationSchema?: ZodSchema | (() => ZodSchema)
     defaultValues?: Record<string, any>
     buttonLabel?: string
     children?: ReactNode
     messages?: MessageOverrides
     mode?: UseFormProps['mode']
+    onSuccess?: (result: any, data: any) => void
+    successContent?: ReactNode
+    keepFormOnSuccess?: boolean
 }
 
 // BasicForm plus an automatic loading-aware submit button. Use BasicForm

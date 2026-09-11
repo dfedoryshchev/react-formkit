@@ -71,6 +71,29 @@ const MyForm = () => (
 
 `BasicForm` is the same pipeline without the built-in submit button - use it when you supply your own controls.
 
+### Submission outcome
+
+A submit has two sides and both are props on `Form` and `BasicForm`. While the handler is in flight, `loadingOverlay` blocks the form; once it has resolved, `onSuccess` fires and `successContent` takes the form's place:
+
+```tsx
+const OrderForm = () => (
+    <Form
+        onSubmit={createOrder}
+        onSuccess={(order) => navigate(`/orders/${order.id}`)}
+        successContent={<p>Thanks - your order is on its way.</p>}
+        loadingOverlay
+    >
+        <FormField name="email" type="email" label="Email" />
+    </Form>
+)
+```
+
+`onSuccess` receives what `onSubmit` resolved to and the values that were submitted, so a handler that returns the created record hands it straight to whatever comes next. Neither side runs when the schema rejects the form or when the handler throws.
+
+`successContent` replaces the form. Pass `keepFormOnSuccess` to render it alongside instead, which is what a form that can be submitted more than once wants - a confirmation rather than the next screen. It shows from the submit that succeeded until the next submit is in flight, and comes back when that one succeeds.
+
+The overlay blocks the form for real: it paints above the form's own positioned content, the form stops receiving pointer events, and keyboard focus is moved into the overlay and held there until it closes, when it returns to the control that had it. The markup carries `.fk-form-loading-overlay`, and the success content `.fk-form-success`.
+
 ## Validation
 
 ```tsx
@@ -274,6 +297,7 @@ Array shapes are a hand-written-schema feature: a config cannot express a repeat
 - No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
+- The loading overlay is styled inline, `z-index: 10` included, so `.fk-form-loading-overlay` can add to it but cannot restyle what is set there.
 
 ## Theming
 

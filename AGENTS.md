@@ -30,7 +30,7 @@ differently from `tsc` and is the only step that would catch a bad import path.
 
 ```
 src/
-  form/        BasicForm, Form, submit-button HOCs
+  form/        BasicForm, Form, the loading overlay, submit-button HOCs
   field/       FormField, Field, the field HOC chain, ConditionalField, FormFieldArray
   controls/    Control (the type router) + every concrete input
   validation/  validators, the message map, form-level rules, required detection
@@ -149,6 +149,37 @@ check or not. Both follow from the resolver parsing the whole schema at once. RH
 maintains the map at all once something subscribes to `formState.isValidating` or
 `formState.validatingFields`, which is why the test that pins this reads `formState.validatingFields`
 rather than `getFieldState`.
+
+**The loading overlay is its own component because the focus trap needs a lifecycle.**
+`BasicForm` renders `FormLoadingOverlay` only while the form is submitting, so the trap is set
+up on mount and torn down on unmount rather than tracked against a boolean. Its cleanup detaches
+the `focusin` and `keydown` guards BEFORE restoring focus to the control that had it: the guard
+cannot tell a restore from an escape, so with the listeners still attached it pulls focus back
+onto an overlay that is being removed and focus ends up on the body. Anything added to that
+cleanup goes above the restore.
+
+Tab and Shift+Tab are refused and focus is returned to the overlay container rather than cycled
+through focusable elements inside it, because the overlay's content is a fixed label with
+nothing focusable in it. Interactive content in the overlay - a cancel button, say - means
+writing the cycle and its test in the same change.
+
+Blocking the pointer is `pointer-events: none` on the `<form>` *and* `z-index: 10` on the
+overlay, and both halves are needed: the z-index alone still lets a click land on the form, and
+the pointer-events alone leaves the overlay painted under anything the form renders with a
+z-index of its own (react-select gives its menu `z-index: 1`). `inert` on the form would be the
+platform answer and is deliberately not used - React commits deletions before other mutations,
+so the overlay's cleanup runs while the attribute is still on the form and the focus restore
+would be refused.
+
+**The success side is derived state, not a second copy of it.** `successContent` renders on
+`formState.isSubmitSuccessful`, the same object the overlay reads `isSubmitting` from, which is
+why neither a schema error nor a handler that throws can show it: react-hook-form catches the
+error out of the submit handler, records `isSubmitSuccessful: false`, and re-throws. The flag
+stays true from one submit until the next one settles, so the render condition excludes
+`isSubmitting` as well - without that, a resubmit displays the previous outcome while the new
+one is still running. `resetOnSubmit` resets inside the submit handler and `reset()` clears the
+flag, which RHF's own post-submit update then sets back; the two props do work together, and
+that is pinned by a test rather than left resting on the ordering staying put.
 
 **Required detection is inferred from the schema, not declared.** `useIsFieldRequired` reads the
 resolved schema, so it has to unwrap wrappers (`ZodEffects` among them) to find the field. A
