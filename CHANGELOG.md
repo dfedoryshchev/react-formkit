@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.2 - 2026-09-13
+
+### Added
+- i18n: validator messages moved into a configurable map (`setMessages`), with per-form overrides and interpolation for parameterised messages
+- Config: conditional fields via `showWhen`, and a `ConditionalField` wrapper for hand-written forms; a hidden field drops its value and is skipped by validation
+- Validation: debounced async validators (`asyncCheck`) with a per-field pending indicator (`useIsAsyncValidating`)
+- Fields: `FormFieldArray` with `useFieldArray` integration, plus add / remove / reorder row controls
+- `Form` / `BasicForm`: submission outcome - `onSuccess` callback and `successContent`; the loading overlay now traps focus
+
+### Fixed
+- i18n: config-driven forms now read the message map too; a missing key no longer falls through to zod's own wording or a hardcoded default
+- Async validation: an unchanged value re-arms the debounce window instead of being dropped; pending state is now tracked per field rather than per schema instance
+- Peer dependencies: `react`, `react-dom`, `react-hook-form`, `@hookform/resolvers` and `zod` moved out of `dependencies` to stop a consumer resolving a second copy of any of them
+
 ## 0.2.1 - 2026-07-12
 
 ### Added
