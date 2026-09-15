@@ -1,18 +1,20 @@
 import React from 'react'
 import { ConditionalField, FormField } from '@/field'
 import type { FormConfig } from './config.types'
+import { fieldRenderProps } from './renderer'
 
 interface ConfigFieldsProps {
     config: FormConfig
 }
 
 // Renders the ordered field list straight onto the native Field/Control stack.
-// TODO: extract a renderer interface when UI-library adapters land, so the same
-// config can target native / Chakra / MUI without touching this component.
+// TODO: resolve each field through a FieldRenderer, so the same config can
+// target a UI-library adapter without touching this component.
 export const ConfigFields: React.FC<ConfigFieldsProps> = ({ config }) => {
     return (
         <>
             {config.map((field) => {
+                const { required } = fieldRenderProps(field)
                 const control = (
                     <FormField
                         key={field.name}
@@ -22,12 +24,7 @@ export const ConfigFields: React.FC<ConfigFieldsProps> = ({ config }) => {
                         placeholder={field.placeholder}
                         options={field.options as any}
                         disabled={field.disabled}
-                        // A conditional field's schema key is deliberately lenient
-                        // (buildSchema enforces it in a refinement instead), so the
-                        // required marker has to come from the config directly.
-                        required={
-                            field.showWhen ? (field.validation ?? []).includes('required') : undefined
-                        }
+                        required={required}
                     />
                 )
 
