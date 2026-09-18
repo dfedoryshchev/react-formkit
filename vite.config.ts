@@ -1,6 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import pkg from './package.json'
+
+const externalPackages = [
+    ...Object.keys(pkg.peerDependencies),
+    ...Object.keys(pkg.dependencies),
+]
+
+// Subpaths must match: the bundle reaches for 'react/jsx-runtime' and '@hookform/resolvers/zod',
+// which are not package names. Stylesheets must not: src imports react-phone-input-2's css, and
+// externalising it drops 45 kB out of the emitted stylesheet and leaves a require() of a .css
+// file in the cjs build.
+const isExternal = (id: string) =>
+    !id.endsWith('.css') &&
+    externalPackages.some((name) => id === name || id.startsWith(`${name}/`))
 
 // Library build for src/. The dev playground uses dev/vite.config.ts.
 export default defineConfig({
@@ -24,17 +38,7 @@ export default defineConfig({
             fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
         },
         rollupOptions: {
-            external: [
-                'react',
-                'react-dom',
-                'react/jsx-runtime',
-                'react-hook-form',
-                '@hookform/resolvers',
-                '@hookform/resolvers/zod',
-                'zod',
-                'react-select',
-                'react-phone-input-2',
-            ],
+            external: isExternal,
         },
     },
 })
