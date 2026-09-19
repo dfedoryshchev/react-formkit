@@ -34,7 +34,7 @@ src/
   field/       FormField, Field, the field HOC chain, ConditionalField, FormFieldArray
   controls/    Control (the type router) + every concrete input
   validation/  validators, the message map, form-level rules, required detection
-  config/      config types, buildSchema, useFormFromConfig, ConfigFields
+  config/      config types, buildSchema, useFormFromConfig, ConfigFields, the renderer seam
   styles/      theme.scss (CSS custom properties)
   index.ts     the public API barrel
 tests/         mirrors src/ by area
@@ -58,6 +58,18 @@ Form / BasicForm      FormProvider + zodResolver + ValidationSchemaContext
 `Form` is `BasicForm` plus an automatic loading-aware submit button. Use `BasicForm` when the
 consumer supplies their own submit control.
 
+A config joins that path one step higher. `ConfigFields` resolves each field to a renderer and
+renders it; the native renderer is what re-enters the chain at `FormField`:
+
+```
+ConfigFields          conditional wrapper + resolveFieldRenderer(registry, field.type)
+  NativeFieldRenderer FormField with the field's config props
+    Field ...         the chain above
+```
+
+The registry comes from `RendererContext`, defaulting to `nativeRenderers`, and the `renderers`
+prop on `ConfigFields` overrides it for one list.
+
 ## Where a change belongs
 
 **A new control.** Add the component under the right `controls/` subdirectory (`inputs/`,
@@ -74,6 +86,10 @@ an inlined string is unreachable by every override mechanism the library offers.
 **A new config rule.** Extend `ValidationDescriptor` in `config/config.types.ts` and handle it
 in `applyRule` in `config/buildSchema.ts`. Give it a `message?: string`, and fall back to the
 message map when the descriptor does not carry one.
+
+**A renderer, or an adapter's worth of them.** A renderer is a `ComponentType<FieldRenderProps>`;
+group them into a `FieldRendererRegistry` and hand it to `RendererProvider` or to the `renderers`
+prop. Do not add entries to `nativeRenderers.byType` - see the seam rule below.
 
 **Anything exported.** Re-export it from the area barrel; `src/index.ts` re-exports the five
 area barrels and nothing else.
@@ -224,6 +240,24 @@ memoising `fields` breaks the live half and buys nothing.
 throws on the first render: `useFormFromConfig: duplicate field name(s): <names>`. The reason it
 cannot be a last-wins is that the defaults and the schema would disagree about which field won.
 Anything that starts accepting duplicates needs an answer for both.
+
+**`nativeRenderers` has one entry, and filling in its `byType` undoes the reason it exists.**
+`Control`'s switch is the single place a control type is mapped to a component. A per-type map in
+`config/` was tried once here and reverted for exactly that reason - it was a second copy of the
+router's table, free to drift from it. `byType` is for a registry that overrides some types and
+leaves the rest to `fallback`; the native registry overrides nothing, so it names nothing.
+
+**`showWhen` is applied by `ConfigFields`, not by the renderer.** The conditional wrapper and the
+`field.name` key stay outside the resolved component, so every renderer gets conditional
+visibility and clear-on-hide without implementing the predicate. That is also why
+`fieldRenderProps` computes `required` from the config for a conditional field - the renderer is
+told the answer rather than asked to work it out. Moving either into a renderer means a second
+place they can be got wrong.
+
+**A nested `RendererProvider` replaces the registry above it rather than merging.** Merging reads
+friendlier and is the wrong default: an inner registry chosen to replace an outer one would keep
+inheriting the outer `byType` for any type the inner one covers through its `fallback`. Consumers
+who want a merge can spread the two themselves, where the precedence is visible.
 
 ## Tests
 

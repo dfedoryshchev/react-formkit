@@ -1,32 +1,27 @@
 import React from 'react'
-import { ConditionalField, FormField } from '@/field'
+import { ConditionalField } from '@/field'
 import type { FormConfig } from './config.types'
-import { fieldRenderProps } from './renderer'
+import { fieldRenderProps, resolveFieldRenderer } from './renderer'
+import { useFieldRenderers } from './RendererContext'
+import type { FieldRendererRegistry } from './renderer.types'
 
 interface ConfigFieldsProps {
     config: FormConfig
+    renderers?: FieldRendererRegistry
 }
 
-// Renders the ordered field list straight onto the native Field/Control stack.
-// TODO: resolve each field through a FieldRenderer, so the same config can
-// target a UI-library adapter without touching this component.
-export const ConfigFields: React.FC<ConfigFieldsProps> = ({ config }) => {
+// Renders the ordered field list, resolving each field through the renderer
+// registry. Conditional visibility is applied here rather than inside the
+// renderer, so a renderer that knows nothing about `showWhen` still gets it.
+export const ConfigFields: React.FC<ConfigFieldsProps> = ({ config, renderers }) => {
+    const inherited = useFieldRenderers()
+    const registry = renderers ?? inherited
+
     return (
         <>
             {config.map((field) => {
-                const { required } = fieldRenderProps(field)
-                const control = (
-                    <FormField
-                        key={field.name}
-                        name={field.name}
-                        type={field.type}
-                        label={field.label}
-                        placeholder={field.placeholder}
-                        options={field.options as any}
-                        disabled={field.disabled}
-                        required={required}
-                    />
-                )
+                const Renderer = resolveFieldRenderer(registry, field.type)
+                const control = <Renderer key={field.name} {...fieldRenderProps(field)} />
 
                 if (!field.showWhen) return control
 

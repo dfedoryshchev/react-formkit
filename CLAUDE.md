@@ -262,6 +262,59 @@ in a `FormConfig` yet, so this is the hand-written-schema entry point only.
 gets its own pending indicator: call it with the row's own field name, built from `row.name` the
 same way the field is.
 
+## Rendering a config with your own components
+
+`ConfigFields` resolves each field to a *renderer* before rendering it. A renderer is a component
+taking `{ field, required }`; with none supplied the native one runs, which is the Field/Control
+stack a JSX form already uses. Nothing about a config changes until you supply a registry.
+
+A registry is a `fallback` plus an optional `byType`. `fallback` catches every type `byType` does
+not name, so the lookup always resolves and a registry lists only what it takes over:
+
+```tsx
+import {
+    ConfigFields,
+    FormField,
+    NativeFieldRenderer,
+    RendererProvider,
+    type FieldRenderer,
+    type FieldRendererRegistry,
+} from 'react-formkit'
+
+const BoxedText: FieldRenderer = ({ field, required }) => (
+    <div className="boxed">
+        <FormField name={field.name} type={field.type} label={field.label} required={required} />
+    </div>
+)
+
+const renderers: FieldRendererRegistry = {
+    fallback: NativeFieldRenderer,
+    byType: { text: BoxedText },
+}
+
+<RendererProvider renderers={renderers}>
+    <SignupForm />
+</RendererProvider>
+```
+
+Pass `renderers` to `ConfigFields` directly to scope it to one list instead; the prop wins over
+the provider.
+
+**Do not put `showWhen` handling inside a renderer.** `ConfigFields` owns the conditional wrapper,
+so a renderer gets the show and hide, the clear-on-hide and the `required` flag for free. A
+renderer that inspects `field.showWhen` itself ends up with two components deciding one field's
+visibility.
+
+**Do not expect a nested provider to layer onto the one above it.** It replaces it. An inner
+registry without a `byType` sends every type to its own `fallback`, the outer `byType` types
+included.
+
+**A renderer still has to register the value.** The native one goes through `FormField`, which is
+what connects a field to react-hook-form. A custom renderer that only paints markup gives you an
+input the form never reads: the schema still carries that field and `defaultValues` still seeds
+it, so it validates the default forever and nothing typed into it reaches the payload. Wrap
+`FormField`, or call `useController` yourself.
+
 ## Validation
 
 Field rules come from the Zod schema. The library also exports ready-made validators:
@@ -372,6 +425,8 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
   without a rename or a retype does not reach them, and duplicate names throw.
 - `react-select` and `react-phone-input-2` are reached from the package root barrel, so both have
   to be installed even by an app that uses neither the multiselect nor the phone control.
+- No UI-library adapter ships with the package. The renderer seam is there and the native renderer
+  is the only registry included, so targeting a component library means writing the renderers.
 - Type declarations are not generated yet, so there are no `.d.ts` files in the published package.
 - The loading overlay's styling is inline, `z-index: 10` included, so a `.fk-form-loading-overlay`
   rule can add to it but cannot restyle what is already set there.

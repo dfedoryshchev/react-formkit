@@ -14,7 +14,8 @@ Two ways to build a form, sharing one runtime:
 
 - **JSX**: `<Form validationSchema={schema}>` with `<FormField name type label />` children.
 - **Config**: a `FormConfig` array plus `useFormFromConfig` and `<ConfigFields />`, which derives
-  default values and a Zod schema from the data.
+  default values and a Zod schema from the data. `ConfigFields` resolves each field through a
+  renderer registry, so the same config can target components other than the native ones.
 
 Everything is exported from the package root; there are no deep import paths.
 
@@ -42,7 +43,10 @@ Everything is exported from the package root; there are no deep import paths.
   state, the message map, `useFormLevelValidators` for cross-field rules, `useIsFieldRequired`,
   `useFormConfig`, `ValidationSchemaContext`.
 - [src/config/index.ts](src/config/index.ts): `FormConfig`, `FieldConfig`,
-  `ValidationDescriptor`, `useFormFromConfig`, `buildSchema`, `ConfigFields`.
+  `ValidationDescriptor`, `useFormFromConfig`, `buildSchema`, `ConfigFields`, and the renderer
+  seam - `FieldRenderProps`, `FieldRenderer`, `FieldRendererRegistry`, `NativeFieldRenderer`,
+  `nativeRenderers`, `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`,
+  `fieldRenderProps`.
 
 ## Behaviour worth knowing before generating code
 
@@ -87,6 +91,15 @@ Everything is exported from the package root; there are no deep import paths.
   are read fresh each render, because `fields` is the caller's own array handed back. A duplicate
   `name` throws during render - `useFormFromConfig: duplicate field name(s): <names>` - rather than
   letting the last field win in the defaults and the schema separately.
+- [src/config/ConfigFields.tsx](src/config/ConfigFields.tsx): resolves each field to a renderer -
+  a component taking `{ field, required }` - and renders that. The registry is `{ fallback,
+  byType? }`, read from `RendererContext` (default `nativeRenderers`) unless the `renderers` prop
+  overrides it for one list. **`showWhen` and the `field.name` key stay outside the renderer**, so
+  a custom renderer gets conditional visibility and the required flag without implementing either.
+  **A nested provider replaces the registry above it rather than merging.** A renderer that does
+  not go through `FormField` or `useController` is not registered with react-hook-form: the schema
+  still validates that field against its default and nothing typed into it reaches the payload.
+  No UI-library adapter ships; the native renderer is the only one included.
 - [src/field/ConditionalField.tsx](src/field/ConditionalField.tsx): conditions are `is`, `isNot`
   or a `test` predicate. In a config, a hidden field's value is dropped; with the standalone
   component, clearing is opt-in via `clear`.

@@ -290,6 +290,68 @@ value a new row starts as - the component never sees the element schema, so it c
 
 Array shapes are a hand-written-schema feature: a config cannot express a repeated field yet.
 
+### Choosing how a field renders
+
+`ConfigFields` does not render controls itself. It resolves each field to a *renderer* - a
+component handed `{ field, required }` - and renders that. Supply none and it uses the native
+one, which is the same Field/Control stack a JSX form goes through, so the default behaviour is
+unchanged.
+
+A registry is a `fallback` plus an optional `byType` map. `fallback` covers every type `byType`
+does not name, so a lookup can never come back empty and a registry lists only the types it means
+to take over:
+
+```tsx
+import {
+    ConfigFields,
+    FormField,
+    NativeFieldRenderer,
+    RendererProvider,
+    type FieldRenderer,
+    type FieldRendererRegistry,
+} from 'react-formkit'
+
+const BoxedText: FieldRenderer = ({ field, required }) => (
+    <div className="boxed">
+        <FormField name={field.name} type={field.type} label={field.label} required={required} />
+    </div>
+)
+
+const renderers: FieldRendererRegistry = {
+    fallback: NativeFieldRenderer,
+    byType: { text: BoxedText },
+}
+
+<RendererProvider renderers={renderers}>
+    <SignupForm />
+</RendererProvider>
+```
+
+**A renderer has to register the field.** Going through `FormField` is what connects it to
+react-hook-form. A renderer that only paints markup leaves you an input the form never reads: its
+key is still in the schema and still seeded from the defaults, so it validates that default and
+nothing typed into it reaches the payload. Wrap `FormField`, or call `useController` yourself.
+
+For one list rather than a subtree, pass the registry straight to the component:
+
+```tsx
+<ConfigFields config={fields} renderers={renderers} />
+```
+
+The prop wins over whatever the provider supplies.
+
+**A nested provider replaces the registry above it rather than merging with it.** An inner
+registry with no `byType` sends every field to its own `fallback`, including the types the outer
+one named. Merging would quietly route a type to an adapter the inner registry was chosen to
+replace.
+
+**`showWhen` is applied outside the renderer.** `ConfigFields` keeps the conditional wrapper, so a
+renderer that has never heard of conditions still gets the show and hide, the clear-on-hide, and
+the `required` flag that a conditional field's deliberately lenient schema key cannot supply.
+
+A renderer gets the field as the config wrote it. Reading `field.type` is how one component can
+cover several types; anything it does not handle belongs in `byType` under another renderer.
+
 ### Known limitations
 - The config's defaults and schema are memoised on field names and types, so a rule or a `defaultValue` edited without renaming or retyping its field does not reach them.
 - Duplicate field names in a config throw rather than resolving to the last one.
@@ -297,6 +359,7 @@ Array shapes are a hand-written-schema feature: a config cannot express a repeat
 - No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
+- The renderer seam is open but no UI-library adapter ships with the package yet; the native renderer is the only one included.
 - The loading overlay is styled inline, `z-index: 10` included, so `.fk-form-loading-overlay` can add to it but cannot restyle what is set there.
 
 ## Theming
