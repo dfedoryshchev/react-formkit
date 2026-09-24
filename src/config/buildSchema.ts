@@ -15,8 +15,6 @@ const baseFor = (field: FieldConfig): ZodTypeAny => {
     }
 }
 
-// Array-valued field types are not modelled yet (see the FieldConfig TODO in
-// config.types); leave their schema untouched until composite/array support lands.
 const isArrayField = (type: FieldConfig['type']): boolean =>
     type === 'checkbox-group' || type === 'multiselect' || type === 'multi-autocomplete'
 
@@ -83,14 +81,15 @@ export function buildSchema(config: FormConfig): ZodTypeAny {
     const conditional: ConditionalEntry[] = []
 
     for (const field of config) {
+        if (isArrayField(field.type)) {
+            // Rules are skipped: every one of them assumes a string or a number.
+            shape[field.name] = z.array(z.unknown()).nullish()
+            continue
+        }
         let s = baseFor(field)
         const rules = field.validation ?? []
         for (const rule of rules) {
             s = applyRule(s, rule)
-        }
-        if (isArrayField(field.type)) {
-            shape[field.name] = s
-            continue
         }
         // Enforce required vs optional: required fields must carry a value
         // (strings non-empty), while non-required fields accept their empty

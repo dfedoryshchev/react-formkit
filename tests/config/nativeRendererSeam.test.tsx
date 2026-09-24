@@ -207,7 +207,7 @@ const cases: ControlCase[] = [
         selector: '.custom-checkbox-group input[type="checkbox"]',
         fill: (el) => fireEvent.click(el),
         expectSubmitted: (v) => expect(v).toEqual(['a']),
-        requiredBlocksEmpty: true,
+        requiredBlocksEmpty: false,
     },
     {
         type: 'multiselect',
@@ -218,7 +218,7 @@ const cases: ControlCase[] = [
             fireEvent.keyDown(el, { key: 'Enter' })
         },
         expectSubmitted: (v) => expect(v).toEqual(['a']),
-        requiredBlocksEmpty: true,
+        requiredBlocksEmpty: false,
     },
     {
         type: 'multi-autocomplete',
@@ -228,7 +228,7 @@ const cases: ControlCase[] = [
             fireEvent.keyDown(el, { key: 'Enter' })
         },
         expectSubmitted: (v) => expect(v).toEqual(['react']),
-        requiredBlocksEmpty: true,
+        requiredBlocksEmpty: false,
     },
 ]
 
@@ -279,17 +279,11 @@ describe.each(seamPaths)('the native renderer through the seam (%s)', (path) => 
     })
 })
 
-// The three array-valued types are excluded: their config schema rejects the
-// value their control produces, which the block further down pins on its own.
-const submittable = cases.filter(
-    (c) =>
-        !(['checkbox-group', 'multiselect', 'multi-autocomplete'] as ControlType[]).includes(
-            c.type,
-        ),
-)
+const arrayTypes: ControlType[] = ['checkbox-group', 'multiselect', 'multi-autocomplete']
+const isArrayCase = (c: ControlCase) => arrayTypes.includes(c.type)
 
 describe.each(seamPaths)('a value typed into the native renderer (%s)', (path) => {
-    it.each(submittable)('reaches the payload from a $type control', async (c) => {
+    it.each(cases)('reaches the payload from a $type control', async (c) => {
         const { control, submit, onSubmit } = mount(path, configFor(c))
         c.fill(control(c.selector))
         submit()
@@ -324,7 +318,7 @@ describe.each(seamPaths)('validation still fires through the seam (%s)', (path) 
         },
     )
 
-    it.each(cases.filter((c) => !c.requiredBlocksEmpty))(
+    it.each(cases.filter((c) => !c.requiredBlocksEmpty && !isArrayCase(c)))(
         'lets an empty required $type field through, since its empty value is a valid one',
         async (c) => {
             const { submit, onSubmit } = mount(path, configFor(c, ['required']))
@@ -351,9 +345,7 @@ describe.each(seamPaths)('validation still fires through the seam (%s)', (path) 
 })
 
 describe.each(seamPaths)('an array-valued config field (%s)', (path) => {
-    const arrayCases = cases.filter((c) =>
-        (['checkbox-group', 'multiselect', 'multi-autocomplete'] as ControlType[]).includes(c.type),
-    )
+    const arrayCases = cases.filter(isArrayCase)
 
     it.each(arrayCases)('renders and collects a $type selection', (c) => {
         const { container, control } = mount(path, configFor(c))
@@ -361,18 +353,32 @@ describe.each(seamPaths)('an array-valued config field (%s)', (path) => {
         expect(container.textContent).toContain(c.type === 'multi-autocomplete' ? 'react' : 'Apple')
     })
 
-    // buildSchema leaves an array-valued field on the default `z.string()` base
-    // while useFormFromConfig seeds it with `[]`, so the schema rejects the
-    // value its own control produces and the form cannot submit at all.
+    it.each(arrayCases)('submits the empty list it is seeded with ($type)', async (c) => {
+        const { submit, onSubmit, errors } = mount(path, configFor(c))
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+        expect((onSubmit.mock.calls[0][0] as Record<string, unknown>)[FIELD]).toEqual([])
+        expect(errors()).toHaveLength(0)
+    })
+
+    it.each(arrayCases)('submits a $type selection under a validation list', async (c) => {
+        const { control, submit, onSubmit } = mount(
+            path,
+            configFor(c, ['required', { rule: 'maxLength', value: 5 }]),
+        )
+        c.fill(control(c.selector))
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+        c.expectSubmitted((onSubmit.mock.calls[0][0] as Record<string, unknown>)[FIELD])
+    })
+
     it.each(arrayCases)(
-        'cannot submit, because the schema key is a string one ($type)',
+        'does not enforce required on an empty $type field, as the limits state',
         async (c) => {
-            const { control, submit, onSubmit, errors } = mount(path, configFor(c))
-            c.fill(control(c.selector))
+            const { submit, onSubmit } = mount(path, configFor(c, ['required']))
             submit()
-            await waitFor(() => expect(errors()).toHaveLength(1))
-            expect(errors()[0]).toContain('Expected string')
-            expect(onSubmit).not.toHaveBeenCalled()
+            await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+            expect((onSubmit.mock.calls[0][0] as Record<string, unknown>)[FIELD]).toEqual([])
         },
     )
 })

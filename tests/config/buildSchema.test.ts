@@ -32,6 +32,24 @@ describe('buildSchema', () => {
         expect(schema.safeParse({ age: 10 }).success).toBe(false)
         expect(schema.safeParse({ age: 21 }).success).toBe(true)
     })
+
+    it.each(['checkbox-group', 'multiselect', 'multi-autocomplete'] as const)(
+        'accepts the array value a %s field holds, rules or not',
+        (type) => {
+            const plain = buildSchema([{ name: 'picks', type }])
+            const ruled = buildSchema([
+                {
+                    name: 'picks',
+                    type,
+                    validation: ['required', { rule: 'email' }, { rule: 'maxLength', value: 5 }],
+                },
+            ])
+            for (const schema of [plain, ruled]) {
+                expect(schema.safeParse({ picks: [] }).success).toBe(true)
+                expect(schema.safeParse({ picks: ['a', 'b'] }).success).toBe(true)
+            }
+        },
+    )
 })
 
 describe('buildSchema - conditional fields', () => {
