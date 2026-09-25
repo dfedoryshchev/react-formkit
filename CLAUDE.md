@@ -90,23 +90,26 @@ success should navigate from `onSuccess` rather than rely on the content staying
 
 ## Mistakes to avoid
 
-**Do not edit a config rule in place and expect the schema to follow.** `useFormFromConfig`
-memoises the defaults and the schema on a signature made of the field names and types, so an
-inline array literal is *not* a performance problem - it is a correctness one in the opposite
-direction. An edit that leaves every name and type alone is invisible to the memo:
+**Do not write a `showWhen.test` predicate inline in a config.** `useFormFromConfig` memoises
+the defaults and the schema on the config's content, not on the array: the schema on each
+field's `name`, `type`, `validation` and `showWhen`, the defaults on `name`, `type` and
+`defaultValue`. An inline array literal with unchanged content returns the same defaults and
+schema, and a changed rule, message, pattern, condition or default rebuilds the one value that
+reads it - no new `key` needed. A function is compared by identity, so an arrow written inline
+is a new function every render and rebuilds the schema every render:
 
 ```tsx
-// the schema keeps min(2); a 3-character value still passes
-const config = tightened ? [{ name: 'nick', type: 'text', validation: [{ rule: 'minLength', value: 8 }] }]
-                         : [{ name: 'nick', type: 'text', validation: [{ rule: 'minLength', value: 2 }] }]
+// rebuilt every render
+{ name: 'street', type: 'text', showWhen: { field: 'zip', test: (v) => v !== '' } }
+
+// stable: declared outside the component, or memoised
+const hasZip = (v: unknown) => v !== ''
+{ name: 'street', type: 'text', showWhen: { field: 'zip', test: hasZip } }
 ```
 
-Changing a `name` or a `type`, or adding or removing a field, refreshes both. Changing a
-`validation` entry, a `message` or a `defaultValue` does not. Generate configs whose shape
-carries their rules, or move the component onto a new `key` when the rules change.
-
-`label`, `placeholder`, `options`, `disabled` and `showWhen` are exempt - `fields` is the array
-handed straight back, so those are read fresh every render.
+A new `defaultValue` reaches the returned `defaults`, not the values of a form that is already
+mounted. `label`, `placeholder`, `options` and `disabled` feed neither derived value - `fields` is
+the array handed straight back, so those are read fresh every render.
 
 **Do not repeat a field name in a config.** `useFormFromConfig` throws during render rather than
 letting the later field last-win over the earlier one in both the defaults and the schema:
@@ -421,8 +424,8 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
   `useFormLevelValidators` apply to a hand-written schema only.
 - `required` is not enforced across every field type, and non-required fields are not made optional.
 - A hidden conditional field is absent from the submitted values rather than present and empty.
-- A config's defaults and schema are cached against its field names and types, so a rule changed
-  without a rename or a retype does not reach them, and duplicate names throw.
+- A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a
+  form that is already mounted, and duplicate names throw.
 - `react-select` and `react-phone-input-2` are reached from the package root barrel, so both have
   to be installed even by an app that uses neither the multiselect nor the phone control.
 - No UI-library adapter ships with the package. The renderer seam is there and the native renderer

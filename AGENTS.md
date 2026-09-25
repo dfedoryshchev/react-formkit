@@ -222,14 +222,14 @@ config is validated only while visible and its value is dropped when it hides. T
 should keep what was typed into it. Do not quietly align the two: they are different defaults on
 purpose.
 
-**The config memo is keyed on names and types, and the signature is the whole contract.**
-`useFormFromConfig` builds `${name}:${type}` per field, joins it, and uses that as the dep for
-both the defaults and the schema, so an inline array literal costs nothing. The price is paid on
-the other side: a rule, a `message` or a `defaultValue` changed without a rename or a retype is
-invisible to the memo, and the form keeps validating against the schema it built first. That
-trade is deliberate and documented for consumers - do not quietly widen the signature to cover
-`validation` without pricing what it costs an inline literal, and do not narrow it back to the
-array reference either.
+**The config memo is keyed on content, and each signature covers exactly what its value reads.**
+`useFormFromConfig` serialises `name`, `type`, `validation` and `showWhen` per field for the
+schema, and `name`, `type` and `defaultValue` for the defaults. An inline array literal costs one
+serialisation per render and no rebuild. A RegExp is written as its source and flags, a function
+as an identity id, because `JSON.stringify` would otherwise drop both and the memo would go stale
+again. Anything `buildSchema` starts reading has to join the schema signature in the same change;
+do not add fields neither value reads (`options`, `label`), and do not narrow it back to the array
+reference either.
 
 `fields` is returned as the caller's own array rather than a memoised copy, which is what keeps
 `label`, `options`, `disabled` and `showWhen` live. `ConfigFields` keys its children on

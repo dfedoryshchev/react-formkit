@@ -21,7 +21,38 @@ const emptyValueFor = (type: FieldConfig['type']): unknown => {
     }
 }
 
-const signatureOf = (config: FormConfig) => config.map((f) => `${f.name}:${f.type}`).join('|')
+const functionIds = new WeakMap<object, number>()
+let nextFunctionId = 0
+
+const functionId = (fn: object): number => {
+    let id = functionIds.get(fn)
+    if (id === undefined) {
+        id = nextFunctionId++
+        functionIds.set(fn, id)
+    }
+    return id
+}
+
+// JSON.stringify writes a RegExp as {} and drops functions, so both would be
+// invisible to the memo. A function is keyed by identity: its source text
+// cannot see the values its closure reads.
+const encode = (_key: string, value: unknown): unknown => {
+    if (value instanceof RegExp) return `regexp:${String(value)}`
+    if (typeof value === 'function') return `function:${functionId(value)}`
+    return value
+}
+
+const schemaSignatureOf = (config: FormConfig) =>
+    JSON.stringify(
+        config.map((f) => [f.name, f.type, f.validation, f.showWhen]),
+        encode,
+    )
+
+const defaultsSignatureOf = (config: FormConfig) =>
+    JSON.stringify(
+        config.map((f) => [f.name, f.type, f.defaultValue]),
+        encode,
+    )
 
 const duplicateNames = (config: FormConfig): string[] => {
     const seen = new Set<string>()
@@ -43,22 +74,22 @@ export function useFormFromConfig(config: FormConfig) {
         throw new Error(`useFormFromConfig: duplicate field name(s): ${dupes.join(', ')}`)
     }
 
-    // Memoize on a stable signature (field names + types) so an inline config
-    // array literal no longer rebuilds defaults/schema on every render.
-    // Trade-off: changing validation rules without changing names/types will
-    // not refresh the schema.
-    const sig = signatureOf(config)
+    const defaultsSig = defaultsSignatureOf(config)
+    const schemaSig = schemaSignatureOf(config)
 
     const defaults = useMemo(
-        () => Object.fromEntries(config.map((f) => [f.name, f.defaultValue ?? emptyValueFor(f.type)])),
+        () =>
+            Object.fromEntries(
+                config.map((f) => [f.name, f.defaultValue ?? emptyValueFor(f.type)]),
+            ),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [sig],
+        [defaultsSig],
     )
 
     const schema = useMemo(
         () => buildSchema(config),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [sig],
+        [schemaSig],
     )
 
     const fields = config

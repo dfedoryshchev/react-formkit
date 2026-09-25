@@ -178,24 +178,25 @@ function SignupForm() {
 
 ### What the config is keyed on
 
-The defaults and the schema are memoised on a signature built from the field names and types
-only, so an inline array literal does *not* rebuild them on every render. Hoisting the config no
-longer buys any speed. What it costs instead is a staleness rule worth knowing before you
-generate a config at runtime.
+The defaults and the schema are memoised on the config's content rather than on the array, so an
+inline array literal rebuilt with the same content every render returns the same defaults and
+the same schema, and the form keeps what was typed into it.
 
-**An edit that changes neither a name nor a type does not reach the schema or the defaults.**
-Tightening `minLength` from 2 to 8, swapping a `message`, adding a `required`, or changing a
-`defaultValue` all leave the signature identical, so the memo hands back the schema it built the
-first time and a value the config now rejects still submits. Changing a field's `name` or `type`,
-or adding or removing a field, does refresh both.
+The schema is keyed on each field's `name`, `type`, `validation` and `showWhen`; the defaults on
+its `name`, `type` and `defaultValue`. Tightening `minLength` from 2 to 8, swapping a `message`
+or a `pattern`, changing a `showWhen` condition or changing a `defaultValue` rebuilds the value
+that depends on it, and only that one: a changed rule does not hand the form new defaults.
 
-The rest of the config is read fresh on every render, because `fields` is the array you passed
-straight back: `label`, `placeholder`, `options`, `disabled` and `showWhen` are live and need no
-signature change to take effect. It is only the two derived values that are cached.
+A function in a config, a `showWhen.test` predicate, is compared by identity. Declare it outside
+the component or memoise it; an arrow written inline in the config is a new function every render
+and rebuilds the schema every render.
 
-So a config that changes shape at runtime is fine. A config whose *rules* change while its shape
-stays put is the case to avoid - give a field a new name, or key the component on the config
-version, so the signature moves with the rules.
+`label`, `placeholder`, `options` and `disabled` feed neither derived value. They are read fresh
+on every render, because `fields` is the array you passed straight back.
+
+A new `defaultValue` reaches the `defaults` the hook returns, not the values of a form that is
+already mounted: those were seeded when it mounted, and react-hook-form does not reseed them on
+its own.
 
 **Duplicate field names throw.** A repeated `name` would last-win in both the defaults and the
 schema, so it is rejected instead:
@@ -353,7 +354,7 @@ A renderer gets the field as the config wrote it. Reading `field.type` is how on
 cover several types; anything it does not handle belongs in `byType` under another renderer.
 
 ### Known limitations
-- The config's defaults and schema are memoised on field names and types, so a rule or a `defaultValue` edited without renaming or retyping its field does not reach them.
+- A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a form that is already mounted.
 - Duplicate field names in a config throw rather than resolving to the last one.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
 - No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
