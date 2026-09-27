@@ -33,9 +33,12 @@ export default defineConfig({
     },
     build: {
         lib: {
-            entry: path.resolve(__dirname, 'src/index.ts'),
+            entry: {
+                index: path.resolve(__dirname, 'src/index.ts'),
+                mantine: path.resolve(__dirname, 'src/adapters/mantine/index.ts'),
+            },
             formats: ['es', 'cjs'],
-            fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
+            fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'mjs' : 'cjs'}`,
         },
         rollupOptions: {
             external: isExternal,

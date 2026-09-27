@@ -17,7 +17,8 @@ Two ways to build a form, sharing one runtime:
   default values and a Zod schema from the data. `ConfigFields` resolves each field through a
   renderer registry, so the same config can target components other than the native ones.
 
-Everything is exported from the package root; there are no deep import paths.
+Everything is exported from the package root except the Mantine renderers, which have their own
+entry point, `react-formkit/mantine`, so that `@mantine/core` stays an optional peer.
 
 ## Docs
 
@@ -47,6 +48,9 @@ Everything is exported from the package root; there are no deep import paths.
   seam - `FieldRenderProps`, `FieldRenderer`, `FieldRendererRegistry`, `NativeFieldRenderer`,
   `nativeRenderers`, `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`,
   `fieldRenderProps`.
+- [src/adapters/mantine/index.ts](src/adapters/mantine/index.ts): the `react-formkit/mantine` entry
+  point - `mantineRenderers` (a registry routing `text` to Mantine and everything else to
+  `NativeFieldRenderer`) and `MantineTextRenderer`.
 
 ## Behaviour worth knowing before generating code
 
@@ -100,7 +104,8 @@ Everything is exported from the package root; there are no deep import paths.
   **A nested provider replaces the registry above it rather than merging.** A renderer that does
   not go through `FormField` or `useController` is not registered with react-hook-form: the schema
   still validates that field against its default and nothing typed into it reaches the payload.
-  No UI-library adapter ships; the native renderer is the only one included.
+  The one UI-library adapter is Mantine, and it covers `text` only; it needs a `MantineProvider`
+  above it.
 - [src/field/ConditionalField.tsx](src/field/ConditionalField.tsx): conditions are `is`, `isNot`
   or a `test` predicate. In a config, a hidden field's value is dropped; with the standalone
   component, clearing is opt-in via `clear`.

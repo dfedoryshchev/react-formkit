@@ -19,10 +19,22 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.58.0",
-    "zod": "^3.25.0"
+    "zod": "^3.25.0",
+    "@mantine/core": "^9.0.0",
+    "@mantine/hooks": "^9.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@mantine/core": {
+      "optional": true
+    },
+    "@mantine/hooks": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@hookform/resolvers": "^5.0.0",
+    "@mantine/core": "^9.6.2",
+    "@mantine/hooks": "^9.6.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -54,6 +66,10 @@
     ".": {
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
+    },
+    "./mantine": {
+      "import": "./dist/mantine.mjs",
+      "require": "./dist/mantine.cjs"
     }
   },
   "sideEffects": [

@@ -35,6 +35,7 @@ src/
   controls/    Control (the type router) + every concrete input
   validation/  validators, the message map, form-level rules, required detection
   config/      config types, buildSchema, useFormFromConfig, ConfigFields, the renderer seam
+  adapters/    renderer registries for component libraries, one entry point each (mantine/)
   styles/      theme.scss (CSS custom properties)
   index.ts     the public API barrel
 tests/         mirrors src/ by area
@@ -70,6 +71,10 @@ ConfigFields          conditional wrapper + resolveFieldRenderer(registry, field
 The registry comes from `RendererContext`, defaulting to `nativeRenderers`, and the `renderers`
 prop on `ConfigFields` overrides it for one list.
 
+An adapter renderer joins at the same step as the native one but goes around `FormField`: it calls
+`useController` and `useIsFieldRequired` itself and hands the value, the error message and the
+required flag to the library's own input. `adapters/mantine/MantineTextRenderer.tsx` is the model.
+
 ## Where a change belongs
 
 **A new control.** Add the component under the right `controls/` subdirectory (`inputs/`,
@@ -90,6 +95,13 @@ message map when the descriptor does not carry one.
 **A renderer, or an adapter's worth of them.** A renderer is a `ComponentType<FieldRenderProps>`;
 group them into a `FieldRendererRegistry` and hand it to `RendererProvider` or to the `renderers`
 prop. Do not add entries to `nativeRenderers.byType` - see the seam rule below.
+
+**A renderer for a component library.** It goes under `adapters/<library>/` and is exported from
+that directory's `index.ts`, which is its own build entry (`vite.config.ts` `build.lib.entry`)
+and its own subpath in `package.json` `exports`. The library itself is an optional peer
+dependency plus a dev dependency, so the rollup externals pick it up from the manifest. Never
+re-export an adapter from `src/index.ts`: the root would then import the library for every
+consumer, which is the `react-select` problem over again.
 
 **Anything exported.** Re-export it from the area barrel; `src/index.ts` re-exports the five
 area barrels and nothing else.
@@ -272,7 +284,9 @@ import { render, screen } from '@testing-library/react'
 
 Without it the first `render` fails with `document is not defined`, which reads like a broken
 setup and is not one. `tests/setup.ts` pulls in `@testing-library/jest-dom` for every file either
-way. Files run sequentially (`fileParallelism: false`) to avoid jsdom worker-timeout flakiness.
+way. A Mantine test also needs a `MantineProvider` and a `window.matchMedia` stub, which jsdom
+lacks and the provider calls on mount; `tests/adapters/mantine.test.tsx` sets both up in the file
+rather than in the shared setup. Files run sequentially (`fileParallelism: false`) to avoid jsdom worker-timeout flakiness.
 
 `tests/` mirrors `src/` by area, and a new test belongs in the existing file for its area when
 one exists.

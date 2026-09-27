@@ -17,6 +17,10 @@ package root, and that barrel imports `MultiSelectInput` and `PhoneInput` at the
 importing anything at all from `react-formkit` resolves both - including a form that uses
 neither control.
 
+The Mantine renderers live behind their own entry point, `react-formkit/mantine`, and need
+`@mantine/core` and `@mantine/hooks` 9 only if you import them. Nothing on the package root
+reaches Mantine.
+
 ## Architecture
 
 ```
@@ -353,6 +357,30 @@ the `required` flag that a conditional field's deliberately lenient schema key c
 A renderer gets the field as the config wrote it. Reading `field.type` is how one component can
 cover several types; anything it does not handle belongs in `byType` under another renderer.
 
+### Mantine
+
+`react-formkit/mantine` exports `mantineRenderers`, a registry that renders `text` fields as a
+Mantine `TextInput` and sends every other type to `NativeFieldRenderer`. It needs a
+`MantineProvider` above it, like any Mantine component:
+
+```tsx
+import '@mantine/core/styles.css'
+import { MantineProvider } from '@mantine/core'
+import { RendererProvider } from 'react-formkit'
+import { mantineRenderers } from 'react-formkit/mantine'
+
+<MantineProvider>
+    <RendererProvider renderers={mantineRenderers}>
+        <SignupForm />
+    </RendererProvider>
+</MantineProvider>
+```
+
+The input is registered through `useController`, so what is typed reaches the payload, the
+required asterisk is read from the schema the same way the native label's is, and a schema error
+shows as the input's `error`. `MantineTextRenderer` is exported on its own too, for a registry of
+your own.
+
 ### Known limitations
 - A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a form that is already mounted.
 - Duplicate field names in a config throw rather than resolving to the last one.
@@ -360,7 +388,7 @@ cover several types; anything it does not handle belongs in `byType` under anoth
 - No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
-- The renderer seam is open but no UI-library adapter ships with the package yet; the native renderer is the only one included.
+- The Mantine adapter covers `text` only; every other type in a config still renders through the native controls.
 - The loading overlay is styled inline, `z-index: 10` included, so `.fk-form-loading-overlay` can add to it but cannot restyle what is set there.
 
 ## Theming
