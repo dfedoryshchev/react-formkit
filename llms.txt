@@ -49,8 +49,9 @@ entry point, `react-formkit/mantine`, so that `@mantine/core` stays an optional 
   `nativeRenderers`, `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`,
   `fieldRenderProps`.
 - [src/adapters/mantine/index.ts](src/adapters/mantine/index.ts): the `react-formkit/mantine` entry
-  point - `mantineRenderers` (a registry routing `text` to Mantine and everything else to
-  `NativeFieldRenderer`) and `MantineTextRenderer`.
+  point - `mantineRenderers` (a registry routing `text`, `select` and `checkbox` to Mantine and
+  everything else to `NativeFieldRenderer`), `MantineTextRenderer`, `MantineSelectRenderer` and
+  `MantineCheckboxRenderer`.
 
 ## Behaviour worth knowing before generating code
 
@@ -104,8 +105,8 @@ entry point, `react-formkit/mantine`, so that `@mantine/core` stays an optional 
   **A nested provider replaces the registry above it rather than merging.** A renderer that does
   not go through `FormField` or `useController` is not registered with react-hook-form: the schema
   still validates that field against its default and nothing typed into it reaches the payload.
-  The one UI-library adapter is Mantine, and it covers `text` only; it needs a `MantineProvider`
-  above it.
+  The one UI-library adapter is Mantine, and it covers `text`, `select` and `checkbox`; it needs
+  a `MantineProvider` above it.
 - [src/field/ConditionalField.tsx](src/field/ConditionalField.tsx): conditions are `is`, `isNot`
   or a `test` predicate. In a config, a hidden field's value is dropped; with the standalone
   component, clearing is opt-in via `clear`.

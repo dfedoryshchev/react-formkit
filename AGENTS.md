@@ -285,8 +285,10 @@ import { render, screen } from '@testing-library/react'
 Without it the first `render` fails with `document is not defined`, which reads like a broken
 setup and is not one. `tests/setup.ts` pulls in `@testing-library/jest-dom` for every file either
 way. A Mantine test also needs a `MantineProvider` and a `window.matchMedia` stub, which jsdom
-lacks and the provider calls on mount; `tests/adapters/mantine.test.tsx` sets both up in the file
-rather than in the shared setup. Files run sequentially (`fileParallelism: false`) to avoid jsdom worker-timeout flakiness.
+lacks and the provider calls on mount, plus a `ResizeObserver` stub for any `Select`, whose
+dropdown constructs one; `tests/adapters/mantine.test.tsx` sets all three up in the file rather
+than in the shared setup, with `env="test"` on the provider so the dropdown renders in place
+instead of through a portal. Files run sequentially (`fileParallelism: false`) to avoid jsdom worker-timeout flakiness.
 
 `tests/` mirrors `src/` by area, and a new test belongs in the existing file for its area when
 one exists.
