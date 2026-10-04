@@ -334,10 +334,13 @@ import { mantineRenderers } from 'react-formkit/mantine'
 </MantineProvider>
 ```
 
-It renders `text` fields as a Mantine `TextInput`, `select` as a `Select` and `checkbox` as a
-`Checkbox`, and every other type through `NativeFieldRenderer`, so a mixed config is expected to
-look mixed. The select takes its `data` from the field's `options` and submits the chosen
-`value`, or `null` while nothing is chosen. **Import it from
+It renders `text` fields as a Mantine `TextInput`, `numeric` as a `NumberInput`, `select` as a
+`Select`, `checkbox` as a `Checkbox` and `date` as a `TextInput` of type `date`, and every other
+type through `NativeFieldRenderer`, so a mixed config is expected to look mixed. The select takes
+its `data` from the field's `options` and submits the chosen `value`, or `null` while nothing is
+chosen. The number input submits a number, or `undefined` once emptied. The date input is the
+browser's date picker, not `@mantine/dates`, and submits a `YYYY-MM-DD` string, so do not install
+`@mantine/dates` or `dayjs` for it and do not expect a `Date` in the payload. **Import it from
 `react-formkit/mantine`, never from the package root** - the root does not export it, which is
 what keeps `@mantine/core` optional for apps that do not use it.
 
@@ -451,8 +454,8 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
   form that is already mounted, and duplicate names throw.
 - `react-select` and `react-phone-input-2` are reached from the package root barrel, so both have
   to be installed even by an app that uses neither the multiselect nor the phone control.
-- The Mantine adapter (`react-formkit/mantine`) covers `text`, `select` and `checkbox`; every
-  other type falls back to the native control. Any other component library means writing the renderers.
+- The Mantine adapter (`react-formkit/mantine`) covers `text`, `numeric`, `select`, `checkbox`
+  and `date`; every other type falls back to the native control. Any other component library means writing the renderers.
 - Type declarations are not generated yet, so there are no `.d.ts` files in the published package.
 - The loading overlay's styling is inline, `z-index: 10` included, so a `.fk-form-loading-overlay`
   rule can add to it but cannot restyle what is already set there.

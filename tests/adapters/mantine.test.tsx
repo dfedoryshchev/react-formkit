@@ -14,6 +14,8 @@ import {
 import type { FormConfig } from '../../src/config'
 import {
     MantineCheckboxRenderer,
+    MantineDateRenderer,
+    MantineNumberRenderer,
     MantineSelectRenderer,
     MantineTextRenderer,
     mantineRenderers,
@@ -76,12 +78,16 @@ const mount = (config: FormConfig) => {
 }
 
 describe('mantineRenderers', () => {
-    it('routes text, select and checkbox to Mantine and leaves every other type on the native one', () => {
+    it('routes text, numeric, select, checkbox and date to Mantine and leaves every other type on the native one', () => {
         expect(mantineRenderers.byType?.text).toBe(MantineTextRenderer)
+        expect(mantineRenderers.byType?.numeric).toBe(MantineNumberRenderer)
         expect(mantineRenderers.byType?.select).toBe(MantineSelectRenderer)
         expect(mantineRenderers.byType?.checkbox).toBe(MantineCheckboxRenderer)
+        expect(mantineRenderers.byType?.date).toBe(MantineDateRenderer)
         expect(Object.keys(mantineRenderers.byType ?? {}).sort()).toEqual([
             'checkbox',
+            'date',
+            'numeric',
             'select',
             'text',
         ])
@@ -204,6 +210,134 @@ describe('a config checkbox field through the Mantine renderer', () => {
     })
 })
 
+describe('a config numeric field through the Mantine renderer', () => {
+    const config: FormConfig = [
+        { name: 'age', type: 'numeric', label: 'Age', placeholder: 'In years' },
+    ]
+
+    it('renders a Mantine NumberInput instead of the native control', () => {
+        const { container, view } = mount(config)
+        const input = view.getByLabelText('Age')
+        expect(input).toHaveClass('mantine-NumberInput-input')
+        expect(input).toHaveAttribute('name', 'age')
+        expect(input).toHaveAttribute('placeholder', 'In years')
+        expect(container.querySelector('.custom-numeric-input')).toBeNull()
+    })
+
+    it('hands what was typed to onSubmit as a number', async () => {
+        const { view, onSubmit, submit } = mount(config)
+        await userEvent.type(view.getByLabelText('Age'), '42')
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ age: 42 })
+    })
+
+    it('keeps a decimal typed digit by digit', async () => {
+        const { view, onSubmit, submit } = mount(config)
+        await userEvent.type(view.getByLabelText('Age'), '1.05')
+        expect(view.getByLabelText('Age')).toHaveValue('1.05')
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ age: 1.05 })
+    })
+
+    it('submits an emptied optional field as undefined, not 0', async () => {
+        const { view, onSubmit, submit } = mount([{ ...config[0], defaultValue: 7 }])
+        const input = view.getByLabelText('Age')
+        expect(input).toHaveValue('7')
+        await userEvent.clear(input)
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toHaveProperty('age', undefined)
+    })
+
+    it('passes disabled through to the input', () => {
+        const { view } = mount([{ ...config[0], disabled: true }])
+        expect(view.getByLabelText('Age')).toBeDisabled()
+    })
+
+    it('marks a required field and shows the min rule message on the input', async () => {
+        const { container, view, onSubmit, submit } = mount([
+            {
+                ...config[0],
+                validation: ['required', { rule: 'min', value: 18, message: 'Adults only' }],
+            },
+        ])
+        expect(container.querySelector('.mantine-InputWrapper-required')).not.toBeNull()
+        const input = view.getByLabelText(/^Age/)
+
+        await userEvent.type(input, '12')
+        submit()
+        await waitFor(() => expect(view.getByText('Adults only')).toBeInTheDocument())
+        expect(input).toHaveAttribute('aria-invalid', 'true')
+        expect(onSubmit).not.toHaveBeenCalled()
+
+        await userEvent.clear(input)
+        await userEvent.type(input, '30')
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ age: 30 })
+    })
+})
+
+describe('a config date field through the Mantine renderer', () => {
+    const config: FormConfig = [{ name: 'startsOn', type: 'date', label: 'Start date' }]
+
+    it('renders a Mantine TextInput of type date instead of the native control', () => {
+        const { container, view } = mount(config)
+        const input = view.getByLabelText('Start date')
+        expect(input).toHaveClass('mantine-TextInput-input')
+        expect(input).toHaveAttribute('type', 'date')
+        expect(input).toHaveAttribute('name', 'startsOn')
+        expect(container.querySelector('.custom-date-input')).toBeNull()
+    })
+
+    it('hands the picked day to onSubmit as a YYYY-MM-DD string', async () => {
+        const { view, onSubmit, submit } = mount(config)
+        fireEvent.change(view.getByLabelText('Start date'), { target: { value: '2026-03-14' } })
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ startsOn: '2026-03-14' })
+    })
+
+    it('submits the configured default untouched', async () => {
+        const { view, onSubmit, submit } = mount([{ ...config[0], defaultValue: '2025-12-01' }])
+        expect(view.getByLabelText('Start date')).toHaveValue('2025-12-01')
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ startsOn: '2025-12-01' })
+    })
+
+    it('submits an untouched optional date as an empty string, as the native one does', async () => {
+        const { onSubmit, submit } = mount(config)
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ startsOn: '' })
+    })
+
+    it('passes disabled through to the input', () => {
+        const { view } = mount([{ ...config[0], disabled: true }])
+        expect(view.getByLabelText('Start date')).toBeDisabled()
+    })
+
+    it('marks a required date and blocks submit until a day is picked', async () => {
+        const { container, view, onSubmit, submit } = mount([
+            { ...config[0], validation: ['required'] },
+        ])
+        expect(container.querySelector('.mantine-InputWrapper-required')).not.toBeNull()
+        const input = view.getByLabelText(/^Start date/)
+
+        submit()
+        await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'))
+        expect(onSubmit).not.toHaveBeenCalled()
+
+        fireEvent.change(input, { target: { value: '2026-03-14' } })
+        submit()
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ startsOn: '2026-03-14' })
+    })
+})
+
 describe('a config text field through the Mantine renderer', () => {
     const config: FormConfig = [
         {
@@ -288,16 +422,17 @@ describe('mixed configs', () => {
     it('renders a type the adapter does not cover through the native control', async () => {
         const { container, view, onSubmit, submit } = mount([
             { name: 'nickname', type: 'text', label: 'Nickname' },
-            { name: 'age', type: 'numeric', label: 'Age' },
+            { name: 'bio', type: 'textarea', label: 'Bio' },
         ])
         expect(view.getByLabelText('Nickname')).toHaveClass('mantine-TextInput-input')
-        expect(container.querySelector('.mantine-NumberInput-input')).toBeNull()
+        expect(container.querySelector('.mantine-Textarea-input')).toBeNull()
+        expect(container.querySelector('.custom-textarea-input textarea')).not.toBeNull()
 
         await userEvent.type(view.getByLabelText('Nickname'), 'Dee')
-        await userEvent.type(view.getByLabelText('Age'), '42')
+        await userEvent.type(view.getByLabelText('Bio'), 'Hi')
         submit()
         await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
-        expect(onSubmit.mock.calls[0][0]).toEqual({ nickname: 'Dee', age: 42 })
+        expect(onSubmit.mock.calls[0][0]).toEqual({ nickname: 'Dee', bio: 'Hi' })
     })
 
     it('takes the required flag from a conditional field config, as ConfigFields hands it', async () => {
