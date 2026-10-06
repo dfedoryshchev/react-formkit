@@ -14,7 +14,7 @@ common way generated code ends up fighting the library.
 `Form`, and list `FormField` children.
 
 ```tsx
-import { Form, FormField } from 'react-formkit'
+import { Form, FormField } from '@react-formkit/core'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -32,7 +32,7 @@ const schema = z.object({
 anything else that decides the fields at runtime.
 
 ```tsx
-import { Form, useFormFromConfig, ConfigFields, type FormConfig } from 'react-formkit'
+import { Form, useFormFromConfig, ConfigFields, type FormConfig } from '@react-formkit/core'
 
 const config: FormConfig = [
     { name: 'fullName', type: 'text', label: 'Full name', validation: ['required'] },
@@ -141,7 +141,7 @@ options renders empty rather than erroring.
 Every built-in message lives in one map. Three scopes, smallest first:
 
 ```tsx
-import { setMessages, defaultMessages } from 'react-formkit'
+import { setMessages, defaultMessages } from '@react-formkit/core'
 
 // app-wide, once at startup. Pass nothing to restore the defaults.
 setMessages({
@@ -282,7 +282,7 @@ import {
     RendererProvider,
     type FieldRenderer,
     type FieldRendererRegistry,
-} from 'react-formkit'
+} from '@react-formkit/core'
 
 const BoxedText: FieldRenderer = ({ field, required }) => (
     <div className="boxed">
@@ -324,8 +324,8 @@ For a Mantine app, import the registry from its own entry point rather than writ
 
 ```tsx
 import { MantineProvider } from '@mantine/core'
-import { RendererProvider } from 'react-formkit'
-import { mantineRenderers } from 'react-formkit/mantine'
+import { RendererProvider } from '@react-formkit/core'
+import { mantineRenderers } from '@react-formkit/core/mantine'
 
 <MantineProvider>
     <RendererProvider renderers={mantineRenderers}>
@@ -341,7 +341,7 @@ its `data` from the field's `options` and submits the chosen `value`, or `null` 
 chosen. The number input submits a number, or `undefined` once emptied. The date input is the
 browser's date picker, not `@mantine/dates`, and submits a `YYYY-MM-DD` string, so do not install
 `@mantine/dates` or `dayjs` for it and do not expect a `Date` in the payload. **Import it from
-`react-formkit/mantine`, never from the package root** - the root does not export it, which is
+`@react-formkit/core/mantine`, never from the package root** - the root does not export it, which is
 what keeps `@mantine/core` optional for apps that do not use it.
 
 ## Validation
@@ -365,7 +365,7 @@ one being "is this username still free?"; `check` resolves `true` when the value
 debounce is only worth its delay under a `mode` that validates before submit, so pass one.
 
 ```tsx
-import { Form, FormField, asyncCheck, required } from 'react-formkit'
+import { Form, FormField, asyncCheck, required } from '@react-formkit/core'
 import { z } from 'zod'
 
 // module scope, not inside the component - see below
@@ -454,7 +454,7 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
   form that is already mounted, and duplicate names throw.
 - `react-select` and `react-phone-input-2` are reached from the package root barrel, so both have
   to be installed even by an app that uses neither the multiselect nor the phone control.
-- The Mantine adapter (`react-formkit/mantine`) covers `text`, `numeric`, `select`, `checkbox`
+- The Mantine adapter (`@react-formkit/core/mantine`) covers `text`, `numeric`, `select`, `checkbox`
   and `date`; every other type falls back to the native control. Any other component library means writing the renderers.
 - Type declarations are not generated yet, so there are no `.d.ts` files in the published package.
 - The loading overlay's styling is inline, `z-index: 10` included, so a `.fk-form-loading-overlay`

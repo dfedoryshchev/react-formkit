@@ -18,7 +18,7 @@ Two ways to build a form, sharing one runtime:
   renderer registry, so the same config can target components other than the native ones.
 
 Everything is exported from the package root except the Mantine renderers, which have their own
-entry point, `react-formkit/mantine`, so that `@mantine/core` stays an optional peer.
+entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an optional peer.
 
 ## Docs
 
@@ -48,7 +48,7 @@ entry point, `react-formkit/mantine`, so that `@mantine/core` stays an optional 
   seam - `FieldRenderProps`, `FieldRenderer`, `FieldRendererRegistry`, `NativeFieldRenderer`,
   `nativeRenderers`, `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`,
   `fieldRenderProps`.
-- [src/adapters/mantine/index.ts](src/adapters/mantine/index.ts): the `react-formkit/mantine` entry
+- [src/adapters/mantine/index.ts](src/adapters/mantine/index.ts): the `@react-formkit/core/mantine` entry
   point - `mantineRenderers` (a registry routing `text`, `numeric`, `select`, `checkbox` and
   `date` to Mantine and everything else to `NativeFieldRenderer`), `MantineTextRenderer`,
   `MantineNumberRenderer`, `MantineSelectRenderer`, `MantineCheckboxRenderer` and

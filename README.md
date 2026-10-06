@@ -5,7 +5,7 @@ React + TypeScript form component library built on React Hook Form and Zod.
 ## Install
 
 ```bash
-npm install react-formkit
+npm install @react-formkit/core
 # peer dependencies
 npm install react react-dom react-hook-form @hookform/resolvers zod
 # also required: the package root imports the multiselect and phone controls
@@ -14,10 +14,10 @@ npm install react-select react-phone-input-2
 
 `react-select` and `react-phone-input-2` are not optional. Everything is exported from the
 package root, and that barrel imports `MultiSelectInput` and `PhoneInput` at the top level, so
-importing anything at all from `react-formkit` resolves both - including a form that uses
+importing anything at all from `@react-formkit/core` resolves both - including a form that uses
 neither control.
 
-The Mantine renderers live behind their own entry point, `react-formkit/mantine`, and need
+The Mantine renderers live behind their own entry point, `@react-formkit/core/mantine`, and need
 `@mantine/core` and `@mantine/hooks` 9 only if you import them. Nothing on the package root
 reaches Mantine.
 
@@ -55,7 +55,7 @@ Form / BasicForm (FormProvider + zodResolver + ValidationSchemaContext)
 ## Usage
 
 ```tsx
-import { Form, FormField } from 'react-formkit'
+import { Form, FormField } from '@react-formkit/core'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -101,10 +101,10 @@ The overlay blocks the form for real: it paints above the form's own positioned 
 ## Validation
 
 ```tsx
-import { required, email, minLength, phone } from 'react-formkit' // common
-import { positive, between, integer, percentage } from 'react-formkit' // numbers
-import { latinOnly, cyrillicOnly, digitsOnly } from 'react-formkit' // charset
-import { personName, companyName } from 'react-formkit' // presets
+import { required, email, minLength, phone } from '@react-formkit/core' // common
+import { positive, between, integer, percentage } from '@react-formkit/core' // numbers
+import { latinOnly, cyrillicOnly, digitsOnly } from '@react-formkit/core' // charset
+import { personName, companyName } from '@react-formkit/core' // presets
 ```
 
 Required fields are detected from the schema - a field with `.describe('required')` or `min(1)` shows the required indicator automatically via `useIsFieldRequired`. Cross-field rules go through `useFormLevelValidators`.
@@ -114,7 +114,7 @@ Required fields are detected from the schema - a field with `.describe('required
 `asyncCheck` wraps a field schema in a debounced remote check - "is this username still taken?". The check resolves `true` when the value is acceptable, and `mode` decides when it runs:
 
 ```tsx
-import { Form, FormField, asyncCheck, required } from 'react-formkit'
+import { Form, FormField, asyncCheck, required } from '@react-formkit/core'
 
 // hoist the schema: the debounce lives in the closure the validator was built with,
 // so a schema rebuilt each render restarts the window each render
@@ -158,7 +158,7 @@ React Hook Form's own per-field `isValidating` answers a different question here
 Describe a form as data and render it from a config array:
 
 ```tsx
-import { Form, useFormFromConfig, ConfigFields, FormConfig } from 'react-formkit'
+import { Form, useFormFromConfig, ConfigFields, FormConfig } from '@react-formkit/core'
 
 // keep the config at module scope: it is fine for the array identity to change,
 // but a rule edited in place will not reach the schema - see below
@@ -314,7 +314,7 @@ import {
     RendererProvider,
     type FieldRenderer,
     type FieldRendererRegistry,
-} from 'react-formkit'
+} from '@react-formkit/core'
 
 const BoxedText: FieldRenderer = ({ field, required }) => (
     <div className="boxed">
@@ -359,7 +359,7 @@ cover several types; anything it does not handle belongs in `byType` under anoth
 
 ### Mantine
 
-`react-formkit/mantine` exports `mantineRenderers`, a registry that renders `text` fields as a
+`@react-formkit/core/mantine` exports `mantineRenderers`, a registry that renders `text` fields as a
 Mantine `TextInput`, `numeric` as a `NumberInput`, `select` as a `Select`, `checkbox` as a
 `Checkbox` and `date` as a `TextInput` of type `date`, and sends every other type to
 `NativeFieldRenderer`. It needs a `MantineProvider` above it, like any Mantine component:
@@ -367,8 +367,8 @@ Mantine `TextInput`, `numeric` as a `NumberInput`, `select` as a `Select`, `chec
 ```tsx
 import '@mantine/core/styles.css'
 import { MantineProvider } from '@mantine/core'
-import { RendererProvider } from 'react-formkit'
-import { mantineRenderers } from 'react-formkit/mantine'
+import { RendererProvider } from '@react-formkit/core'
+import { mantineRenderers } from '@react-formkit/core/mantine'
 
 <MantineProvider>
     <RendererProvider renderers={mantineRenderers}>

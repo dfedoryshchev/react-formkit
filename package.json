@@ -1,5 +1,5 @@
 {
-  "name": "react-formkit",
+  "name": "@react-formkit/core",
   "version": "0.2.2",
   "scripts": {
     "dev": "vite dev/",
