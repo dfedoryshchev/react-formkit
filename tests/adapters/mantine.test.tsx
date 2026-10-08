@@ -418,6 +418,77 @@ describe('validation on a Mantine text field', () => {
     })
 })
 
+describe('every Mantine control in one form', () => {
+    const config: FormConfig = [
+        { name: 'nickname', type: 'text', label: 'Nickname' },
+        { name: 'age', type: 'numeric', label: 'Age' },
+        {
+            name: 'country',
+            type: 'select',
+            label: 'Country',
+            options: [
+                { value: 'ca', label: 'Canada' },
+                { value: 'fr', label: 'France' },
+            ],
+        },
+        { name: 'terms', type: 'checkbox', label: 'I agree' },
+        { name: 'startsOn', type: 'date', label: 'Start date' },
+    ]
+
+    const PropHarness: React.FC<{
+        onSubmit: (values: Record<string, unknown>) => void
+    }> = ({ onSubmit }) => {
+        const { defaults, fields, schema } = useFormFromConfig(config)
+        return (
+            <MantineProvider env="test">
+                <BasicForm onSubmit={onSubmit} validationSchema={schema} defaultValues={defaults}>
+                    <ConfigFields config={fields} renderers={mantineRenderers} />
+                    <button type="submit">Submit</button>
+                </BasicForm>
+            </MantineProvider>
+        )
+    }
+
+    const fillAndSubmit = async (
+        view: ReturnType<typeof within>,
+        onSubmit: ReturnType<typeof vi.fn>,
+    ) => {
+        expect(view.getByLabelText('Nickname')).toHaveClass('mantine-TextInput-input')
+        expect(view.getByLabelText('Age')).toHaveClass('mantine-NumberInput-input')
+        expect(view.getByRole('combobox', { name: 'Country' })).toHaveClass('mantine-Select-input')
+        expect(view.getByLabelText('I agree')).toHaveClass('mantine-Checkbox-input')
+        expect(view.getByLabelText('Start date')).toHaveClass('mantine-TextInput-input')
+
+        await userEvent.type(view.getByLabelText('Nickname'), 'Dee')
+        await userEvent.type(view.getByLabelText('Age'), '42')
+        await userEvent.click(view.getByRole('combobox', { name: 'Country' }))
+        await userEvent.click(view.getByRole('option', { name: 'France' }))
+        await userEvent.click(view.getByText('I agree'))
+        fireEvent.change(view.getByLabelText('Start date'), { target: { value: '2026-03-14' } })
+
+        fireEvent.click(view.getByRole('button', { name: 'Submit' }))
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({
+            nickname: 'Dee',
+            age: 42,
+            country: 'fr',
+            terms: true,
+            startsOn: '2026-03-14',
+        })
+    }
+
+    it('hands every filled control to onSubmit in one payload', async () => {
+        const { view, onSubmit } = mount(config)
+        await fillAndSubmit(view, onSubmit)
+    })
+
+    it('does the same with the registry passed to ConfigFields and no provider', async () => {
+        const onSubmit = vi.fn()
+        const { container } = render(<PropHarness onSubmit={onSubmit} />)
+        await fillAndSubmit(within(container), onSubmit)
+    })
+})
+
 describe('mixed configs', () => {
     it('renders a type the adapter does not cover through the native control', async () => {
         const { container, view, onSubmit, submit } = mount([
