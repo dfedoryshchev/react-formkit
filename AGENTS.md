@@ -135,11 +135,12 @@ there too.
 
 **`zodResolver` already parses asynchronously, so an async rule needs nothing from the resolver
 setup.** `useFormConfig` builds it with no `mode` option, and that default path calls
-`schema.parseAsync`. The config engine is the exception: `buildSchema` validates each `showWhen`
-field with a synchronous `safeParse` inside a `superRefine`, and zod throws when an async
-refinement is reached during a synchronous parse. That is why `asyncCheck` is for hand-written
-schemas only; supporting it in a config means making that refinement async for every config form,
-and finding a way for a data-only `ValidationDescriptor` to name a function.
+`schema.parseAsync`. The config engine is the exception: `buildSchema` keeps each `showWhen`
+field's real schema out of the object shape and validates it with a synchronous `safeParse` inside
+a `superRefine`, where the root walk that runs `asyncCheck` never reaches it. That is why
+`asyncCheck` is for hand-written schemas only; supporting it in a config means making that
+refinement async for every config form, and finding a way for a data-only `ValidationDescriptor`
+to name a function.
 
 **A debounced validator holds its state in the closure it was built with.** Same reason as the
 message map: the factory runs at schema-build time, outside React, so there is no ref or state to
@@ -147,7 +148,7 @@ put it in. One `asyncCheck` call is one debounce channel PER FIELD PATH, which m
 schema a correctness requirement rather than an optimisation - a schema rebuilt each render
 restarts the window each render and it never elapses.
 
-**Only a change to the value re-arms that window.** The refinement does not see keystrokes, it sees
+**Only a change to the value re-arms that window.** The check does not see keystrokes, it sees
 parses, and under a resolver the parse is the whole schema - so editing any other field runs it
 again with a value nobody touched. Treating that as a keystroke starves the check twice over: the
 window is pushed out for as long as the neighbouring field is being typed into, and a request
@@ -162,11 +163,19 @@ so one validator routinely sits on two fields or on every row of an array, and o
 `latest`/`waiting`/`timer` behind two fields lets one field's verdict answer for the other - the
 rejected value submits. The path alone is not an address either, since two forms may both have a
 `username`. So the `WeakMap` `useIsAsyncValidating` subscribes through is keyed by the schema the
-factory returned and hands back a channel per path, while the refinement reads its own path off
-`ctx.path`; the hook finds the node with `fieldAt` over `ValidationSchemaContext`, the same context
-`useIsFieldRequired` reads. The consequence to keep in mind: zod methods that clone rather than wrap
-(`.describe()` builds `new This({ ...this._def })`) return an instance the channel is not attached
-to. Wrapping is safe - `unwrapField` in `schema.utils.ts` peels `ZodEffects`, `ZodOptional`,
+factory returned and hands back a channel per path; the hook finds the node with `fieldAt` over
+`ValidationSchemaContext`, the same context `useIsFieldRequired` reads. The check reads no
+`ctx.path`, which Zod 4 no longer offers: `asyncCheck` only tags its node, and `withAsyncChecks`
+walks the schema and the value together from the root, handing each tagged field its dotted path
+and adding the issue with that `path`. The walk follows objects, arrays, tuples, records,
+discriminated unions and the optional, nullable, default, effects, readonly, branded, catch and
+pipeline wrappers; a tagged field below anything else (a plain union, a lazy schema) never gets
+its remote check, so a new container type needs a case in `steps` and `innerSchemas` as well as in
+`unwrapField`. The root hook is a preprocess rather than a refinement because Zod 3 skips a
+refinement once anything beneath it has a type error. `BasicForm` applies the wrapper, so it is
+what `ValidationSchemaContext` carries. The consequence to keep in mind: zod methods that clone
+rather than wrap (`.describe()` builds `new This({ ...this._def })`) return an instance the
+channel is not attached to. Wrapping is safe - `unwrapField` in `schema.utils.ts` peels `ZodEffects`, `ZodOptional`,
 `ZodNullable` and `ZodDefault` - so a new wrapper type needs a case there or the indicator silently
 goes dead.
 

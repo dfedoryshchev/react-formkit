@@ -6,6 +6,7 @@ import { FormLevelValidator } from '@/validation/useFormLevelValidators'
 import { ValidationSchemaContext } from '@/validation/ValidationSchemaContext'
 import { MessageContext } from '@/validation/MessageContext'
 import { MessageOverrides, resolveMessages, withMessages } from '@/validation/messages'
+import { withAsyncChecks } from '@/validation/validators/async.validators'
 import FormLoadingOverlay from './FormLoadingOverlay'
 
 interface BasicFormProps {
@@ -54,13 +55,13 @@ const BasicForm: React.FC<BasicFormProps> = ({
 
     // A schema passed ready-made already carries its strings, so only the
     // builder form can pick the overrides up.
-    const schema = useMemo(
-        () =>
+    const schema = useMemo(() => {
+        const built =
             typeof validationSchema === 'function'
                 ? withMessages(messages, validationSchema)
-                : validationSchema,
-        [validationSchema, messages],
-    )
+                : validationSchema
+        return built && withAsyncChecks(built)
+    }, [validationSchema, messages])
 
     const methods = useFormConfig({
         validationSchema: schema,

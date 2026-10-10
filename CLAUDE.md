@@ -381,14 +381,14 @@ const schema = z.object({
 </Form>
 ```
 
-Five things to know before generating code around it:
+Six things to know before generating code around it:
 
 **Hoist the schema.** The debounce lives in the closure the validator was built with, because
 validators run outside React and there is no hook to hold it in. A schema rebuilt on every render
 hands the field a fresh channel that has never seen a keystroke, so the window never elapses.
 
-**The check never sees an empty value.** The base schema owns that case, and clearing the field
-also cancels a request that was already counting down.
+**The check never sees an empty value, or one the base schema rejects.** The base schema owns
+those cases, and clearing the field also cancels a request that was already counting down.
 
 **A verdict about a value the user has left cannot decide the current one.** Every parse waiting
 on a window receives the verdict for the value that window ends on, whatever order the requests
@@ -401,6 +401,15 @@ unsubmittable; the server is still the authority at submit.
 field runs this one's check too - but with an unchanged value that joins the wait already open
 instead of starting a new window. Request volume tracks what the user typed into this field, not
 how busy the rest of the form is.
+
+**Outside `Form` and `BasicForm`, parse through `withAsyncChecks(schema)`.** The form applies it
+for you; a schema parsed anywhere else without it never runs its remote checks.
+
+```ts
+import { withAsyncChecks } from '@react-formkit/core'
+
+const result = await withAsyncChecks(schema).safeParseAsync(values)
+```
 
 `asyncCheck` applies to a hand-written schema. A config's `validation` list is data, and a remote
 check is a function, so the config entry point has no way to express one yet.

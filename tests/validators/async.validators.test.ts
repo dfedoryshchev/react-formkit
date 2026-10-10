@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { z } from 'zod'
-import { asyncCheck, getAsyncCheckChannel } from '../../src/validation/validators/async.validators'
+import {
+    asyncCheck,
+    getAsyncCheckChannel,
+    withAsyncChecks,
+} from '../../src/validation/validators/async.validators'
 import { required } from '../../src/validation/validators/common.validators'
 import { setMessages } from '../../src/validation/messages'
 
@@ -20,6 +24,8 @@ const firstError = (result: z.SafeParseReturnType<unknown, unknown>) =>
 const issuePaths = (result: z.SafeParseReturnType<unknown, unknown>) =>
     result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))
 
+const standalone = (...args: Parameters<typeof asyncCheck>) => withAsyncChecks(asyncCheck(...args))
+
 beforeEach(() => {
     vi.useFakeTimers()
 })
@@ -32,7 +38,7 @@ afterEach(() => {
 describe('asyncCheck', () => {
     it('passes the value through when the check accepts it', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(z.string(), check, { delay: 50 })
+        const schema = standalone(z.string(), check, { delay: 50 })
 
         const result = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(60)
@@ -43,7 +49,7 @@ describe('asyncCheck', () => {
     })
 
     it('reports the message-map default when the check rejects the value', async () => {
-        const schema = asyncCheck(z.string(), () => Promise.resolve(false), { delay: 50 })
+        const schema = standalone(z.string(), () => Promise.resolve(false), { delay: 50 })
 
         const result = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(60)
@@ -52,7 +58,7 @@ describe('asyncCheck', () => {
     })
 
     it('prefers an explicit message over the map', async () => {
-        const schema = asyncCheck(z.string(), () => Promise.resolve(false), {
+        const schema = standalone(z.string(), () => Promise.resolve(false), {
             delay: 50,
             message: 'That username is taken',
         })
@@ -65,7 +71,7 @@ describe('asyncCheck', () => {
 
     it('reads the map at build time, like every other validator', async () => {
         setMessages({ asyncCheck: 'Deja pris' })
-        const schema = asyncCheck(z.string(), () => Promise.resolve(false), { delay: 50 })
+        const schema = standalone(z.string(), () => Promise.resolve(false), { delay: 50 })
 
         const result = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(60)
@@ -74,13 +80,11 @@ describe('asyncCheck', () => {
     })
 })
 
-// A failed string check leaves zod's status dirty rather than aborted, so the
-// refinement still runs for an empty field. Without the guard every empty
-// required field would fire a request on mount.
+// Without the guard every empty field would fire a request on mount.
 describe('asyncCheck - values it must not spend a request on', () => {
     it('skips an empty string and leaves the base error alone', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(required(), check, { delay: 50 })
+        const schema = standalone(required(), check, { delay: 50 })
 
         expect(firstError(await schema.safeParseAsync(''))).toBe('This field is required')
         expect(check).not.toHaveBeenCalled()
@@ -88,7 +92,7 @@ describe('asyncCheck - values it must not spend a request on', () => {
 
     it('cancels a window already counting down when the field is emptied', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(required(), check, { delay: 50 })
+        const schema = standalone(required(), check, { delay: 50 })
 
         const typed = schema.safeParseAsync('a')
         const cleared = schema.safeParseAsync('')
@@ -103,7 +107,7 @@ describe('asyncCheck - values it must not spend a request on', () => {
 
     it('skips a nullish value', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(z.string().nullish(), check, { delay: 50 })
+        const schema = standalone(z.string().nullish(), check, { delay: 50 })
 
         expect((await schema.safeParseAsync(null)).success).toBe(true)
         expect((await schema.safeParseAsync(undefined)).success).toBe(true)
@@ -114,7 +118,7 @@ describe('asyncCheck - values it must not spend a request on', () => {
 describe('asyncCheck - debounce', () => {
     it('collapses the parses inside one window into a single check', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(z.string(), check, { delay: 50 })
+        const schema = standalone(z.string(), check, { delay: 50 })
 
         const first = schema.safeParseAsync('a')
         const second = schema.safeParseAsync('ab')
@@ -128,7 +132,7 @@ describe('asyncCheck - debounce', () => {
 
     it('starts a new window once the previous one has settled', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(z.string(), check, { delay: 50 })
+        const schema = standalone(z.string(), check, { delay: 50 })
 
         const first = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(60)
@@ -143,7 +147,7 @@ describe('asyncCheck - debounce', () => {
 
     it('answers a repeat parse of the settled value without another check', async () => {
         const check = vi.fn().mockResolvedValue(false)
-        const schema = asyncCheck(z.string(), check, { delay: 50, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 50, message: 'taken' })
 
         const typed = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(60)
@@ -158,8 +162,8 @@ describe('asyncCheck - debounce', () => {
     it('keeps two validator instances on their own debounce channels', async () => {
         const free = vi.fn().mockResolvedValue(true)
         const taken = vi.fn().mockResolvedValue(false)
-        const freeSchema = asyncCheck(z.string(), free, { delay: 50 })
-        const takenSchema = asyncCheck(z.string(), taken, { delay: 50, message: 'taken' })
+        const freeSchema = standalone(z.string(), free, { delay: 50 })
+        const takenSchema = standalone(z.string(), taken, { delay: 50, message: 'taken' })
 
         const a = freeSchema.safeParseAsync('x')
         const b = takenSchema.safeParseAsync('x')
@@ -175,7 +179,7 @@ describe('asyncCheck - debounce', () => {
 describe('asyncCheck - stale results', () => {
     it('gives a superseded parse the verdict of the value that won the window', async () => {
         const check = vi.fn(async (value: string) => value !== 'bob')
-        const schema = asyncCheck(z.string(), check, { delay: 50, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 50, message: 'taken' })
 
         const stale = schema.safeParseAsync('ada')
         const current = schema.safeParseAsync('bob')
@@ -191,7 +195,7 @@ describe('asyncCheck - stale results', () => {
         const slow = deferred<boolean>()
         const fast = deferred<boolean>()
         const check = vi.fn((value: string) => (value === 'ada' ? slow.promise : fast.promise))
-        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 10, message: 'taken' })
 
         const stale = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(20)
@@ -218,7 +222,7 @@ describe('asyncCheck - stale results', () => {
         const check = vi.fn((value: string) =>
             value === 'ada' ? abandoned.promise : current.promise,
         )
-        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 10, message: 'taken' })
 
         const stale = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(20)
@@ -241,7 +245,7 @@ describe('asyncCheck - stale results', () => {
         const check = vi.fn((value: string) =>
             value === 'ada' ? inFlight.promise : Promise.resolve(true),
         )
-        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 10, message: 'taken' })
 
         const stale = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(20)
@@ -263,7 +267,7 @@ describe('asyncCheck - stale results', () => {
         const slow = deferred<boolean>()
         const fast = deferred<boolean>()
         const check = vi.fn((value: string) => (value === 'ada' ? slow.promise : fast.promise))
-        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 10, message: 'taken' })
 
         const stale = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(20)
@@ -288,7 +292,7 @@ describe('asyncCheck - stale results', () => {
 describe('asyncCheck - a parse that does not change the value', () => {
     it('does not push the quiet period out', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(z.string(), check, { delay: 50 })
+        const schema = standalone(z.string(), check, { delay: 50 })
 
         const typed = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(30)
@@ -303,7 +307,7 @@ describe('asyncCheck - a parse that does not change the value', () => {
     it('does not discard the request already in flight for that value', async () => {
         const answer: Array<(ok: boolean) => void> = []
         const check = vi.fn(() => new Promise<boolean>((resolve) => answer.push(resolve)))
-        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 10, message: 'taken' })
 
         const typed = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(20)
@@ -322,7 +326,7 @@ describe('asyncCheck - a parse that does not change the value', () => {
     it('leaves one wait open, so the answer to it still clears the indicator', async () => {
         const answer: Array<(ok: boolean) => void> = []
         const check = vi.fn(() => new Promise<boolean>((resolve) => answer.push(resolve)))
-        const schema = asyncCheck(z.string(), check, { delay: 10 })
+        const schema = standalone(z.string(), check, { delay: 10 })
         const channel = getAsyncCheckChannel(schema)!
 
         const typed = schema.safeParseAsync('ada')
@@ -345,7 +349,7 @@ describe('asyncCheck - a parse that does not change the value', () => {
 
     it('still re-arms when the value did change', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(z.string(), check, { delay: 50 })
+        const schema = standalone(z.string(), check, { delay: 50 })
 
         const typed = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(30)
@@ -371,7 +375,7 @@ describe('asyncCheck - pending channel', () => {
 
     it('is pending from the moment the window is armed until the verdict lands', async () => {
         const gate = deferred<boolean>()
-        const schema = asyncCheck(z.string(), () => gate.promise, { delay: 50 })
+        const schema = standalone(z.string(), () => gate.promise, { delay: 50 })
         const channel = getAsyncCheckChannel(schema)!
 
         expect(channel.isPending()).toBe(false)
@@ -390,7 +394,7 @@ describe('asyncCheck - pending channel', () => {
     })
 
     it('reports one wait, not two, when a keystroke re-arms the window', async () => {
-        const schema = asyncCheck(z.string(), () => Promise.resolve(true), { delay: 50 })
+        const schema = standalone(z.string(), () => Promise.resolve(true), { delay: 50 })
         const channel = getAsyncCheckChannel(schema)!
         const seen: boolean[] = []
         channel.subscribe(() => seen.push(channel.isPending()))
@@ -407,7 +411,7 @@ describe('asyncCheck - pending channel', () => {
 
     it('stops waiting when the field is emptied and the window is cancelled', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(required(), check, { delay: 50 })
+        const schema = standalone(required(), check, { delay: 50 })
         const channel = getAsyncCheckChannel(schema)!
 
         const typed = schema.safeParseAsync('a')
@@ -423,7 +427,7 @@ describe('asyncCheck - pending channel', () => {
     })
 
     it('stops waiting when the check throws', async () => {
-        const schema = asyncCheck(z.string(), () => Promise.reject(new Error('network down')), {
+        const schema = standalone(z.string(), () => Promise.reject(new Error('network down')), {
             delay: 10,
         })
         const channel = getAsyncCheckChannel(schema)!
@@ -437,7 +441,7 @@ describe('asyncCheck - pending channel', () => {
 
     it('does not wait at all for a repeat parse answered from the settled verdict', async () => {
         const check = vi.fn().mockResolvedValue(true)
-        const schema = asyncCheck(z.string(), check, { delay: 50 })
+        const schema = standalone(z.string(), check, { delay: 50 })
         const channel = getAsyncCheckChannel(schema)!
 
         const first = schema.safeParseAsync('ada')
@@ -455,7 +459,7 @@ describe('asyncCheck - pending channel', () => {
     })
 
     it('stops notifying an unsubscribed listener', async () => {
-        const schema = asyncCheck(z.string(), () => Promise.resolve(true), { delay: 50 })
+        const schema = standalone(z.string(), () => Promise.resolve(true), { delay: 50 })
         const channel = getAsyncCheckChannel(schema)!
         const seen: boolean[] = []
         const unsubscribe = channel.subscribe(() => seen.push(channel.isPending()))
@@ -474,8 +478,8 @@ describe('asyncCheck - pending channel', () => {
 
     it('keeps two validator instances on their own channels', async () => {
         const slow = deferred<boolean>()
-        const slowSchema = asyncCheck(z.string(), () => slow.promise, { delay: 50 })
-        const fastSchema = asyncCheck(z.string(), () => Promise.resolve(true), { delay: 50 })
+        const slowSchema = standalone(z.string(), () => slow.promise, { delay: 50 })
+        const fastSchema = standalone(z.string(), () => Promise.resolve(true), { delay: 50 })
         const slowChannel = getAsyncCheckChannel(slowSchema)!
         const fastChannel = getAsyncCheckChannel(fastSchema)!
 
@@ -499,7 +503,10 @@ describe('asyncCheck - pending channel', () => {
 describe('asyncCheck - one instance on more than one field', () => {
     const twoFields = (check: (value: string) => Promise<boolean>, delay = 50) => {
         const emailCheck = asyncCheck(z.string(), check, { delay, message: 'taken' })
-        return { emailCheck, schema: z.object({ primary: emailCheck, backup: emailCheck }) }
+        return {
+            emailCheck,
+            schema: withAsyncChecks(z.object({ primary: emailCheck, backup: emailCheck })),
+        }
     }
 
     it('asks about every field that shares the instance', async () => {
@@ -578,7 +585,9 @@ describe('asyncCheck - one instance on more than one field', () => {
             value === 'slow' ? gate.promise : Promise.resolve(true),
         )
         const nameCheck = asyncCheck(z.string(), check, { delay: 50 })
-        const schema = z.object({ rows: z.array(z.object({ username: nameCheck })) })
+        const schema = withAsyncChecks(
+            z.object({ rows: z.array(z.object({ username: nameCheck })) }),
+        )
         const first = getAsyncCheckChannel(nameCheck, 'rows.0.username')!
         const second = getAsyncCheckChannel(nameCheck, 'rows.1.username')!
 
@@ -594,10 +603,131 @@ describe('asyncCheck - one instance on more than one field', () => {
     })
 })
 
+const runEffect = (node: z.ZodTypeAny, value: unknown, ctx: z.RefinementCtx) => {
+    const { effect } = (node as z.ZodEffects<z.ZodTypeAny>)._def
+    if (effect.type === 'refinement') return effect.refinement(value, ctx)
+    return effect.transform(value, ctx)
+}
+
+describe('asyncCheck - run from the schema root', () => {
+    // The context Zod 4 hands a check carries no path, so neither the field
+    // nor the root may read one.
+    it('needs no parse path from the refinement context', async () => {
+        const check = vi.fn().mockResolvedValue(false)
+        const addIssue = vi.fn()
+        const ctx = { addIssue } as unknown as z.RefinementCtx
+        const field = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+
+        await runEffect(field, 'ada', ctx)
+
+        const schema = withAsyncChecks(z.object({ username: field }))
+        const run = runEffect(schema, { username: 'ada' }, ctx)
+        await vi.advanceTimersByTimeAsync(20)
+        await run
+
+        expect(check).toHaveBeenCalledTimes(1)
+        expect(addIssue).toHaveBeenCalledWith(
+            expect.objectContaining({ message: 'taken', path: ['username'] }),
+        )
+    })
+
+    it('still asks when another field holds a value of the wrong type', async () => {
+        const check = vi.fn().mockResolvedValue(false)
+        const schema = withAsyncChecks(
+            z.object({
+                username: asyncCheck(required(), check, { delay: 10, message: 'taken' }),
+                age: z.number(),
+            }),
+        )
+
+        const result = schema.safeParseAsync({ username: 'ada' })
+        await vi.advanceTimersByTimeAsync(20)
+
+        expect(check).toHaveBeenCalledWith('ada')
+        expect(issuePaths(await result).sort()).toEqual(['age', 'username'])
+    })
+
+    it('does not ask about a value the field itself rejects', async () => {
+        const check = vi.fn().mockResolvedValue(false)
+        const schema = withAsyncChecks(
+            z.object({
+                email: asyncCheck(z.string().email('bad email'), check, { delay: 10 }),
+            }),
+        )
+
+        const result = schema.safeParseAsync({ email: 'nope' })
+        await vi.advanceTimersByTimeAsync(20)
+
+        expect(firstError(await result)).toBe('bad email')
+        expect(check).not.toHaveBeenCalled()
+    })
+
+    it('waits for a field schema that is itself asynchronous before asking', async () => {
+        const check = vi.fn().mockResolvedValue(false)
+        const base = z.string().refine(async (value) => value.length > 1, 'too short')
+        const schema = withAsyncChecks(
+            z.object({ username: asyncCheck(base, check, { delay: 10, message: 'taken' }) }),
+        )
+
+        const short = schema.safeParseAsync({ username: 'a' })
+        await vi.advanceTimersByTimeAsync(20)
+        expect(firstError(await short)).toBe('too short')
+        expect(check).not.toHaveBeenCalled()
+
+        const long = schema.safeParseAsync({ username: 'ab' })
+        await vi.advanceTimersByTimeAsync(20)
+        expect(firstError(await long)).toBe('taken')
+        expect(check).toHaveBeenCalledWith('ab')
+    })
+
+    it('finds the field through optional, nullable, default and refined containers', async () => {
+        const check = vi.fn().mockResolvedValue(false)
+        const name = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = withAsyncChecks(
+            z.object({
+                a: name.optional(),
+                b: name.nullable(),
+                c: name.default('dflt'),
+                group: z
+                    .object({ rows: z.array(z.object({ d: name })).optional() })
+                    .refine(() => true),
+            }),
+        )
+
+        const result = schema.safeParseAsync({ a: 'x', b: null, group: { rows: [{ d: 'y' }] } })
+        await vi.advanceTimersByTimeAsync(20)
+
+        expect(issuePaths(await result)).toEqual(['a', 'c', 'group.rows.0.d'])
+        expect(check).toHaveBeenCalledWith('dflt')
+    })
+
+    it('wraps once however often it is applied', async () => {
+        const check = vi.fn().mockResolvedValue(false)
+        const inner = z.object({
+            username: asyncCheck(z.string(), check, { delay: 10, message: 'taken' }),
+        })
+        const once = withAsyncChecks(inner)
+
+        expect(withAsyncChecks(inner)).toBe(once)
+        expect(withAsyncChecks(once)).toBe(once)
+
+        const result = withAsyncChecks(once.refine(() => true)).safeParseAsync({ username: 'ada' })
+        await vi.advanceTimersByTimeAsync(20)
+
+        expect(issuePaths(await result)).toEqual(['username'])
+        expect(check).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves a schema with no async check as it is', () => {
+        const plain = z.object({ name: z.string() })
+        expect(withAsyncChecks(plain)).toBe(plain)
+    })
+})
+
 describe('asyncCheck - failure', () => {
     it('fails open when the check rejects, so a network blip cannot block the form', async () => {
         const check = vi.fn().mockRejectedValue(new Error('network down'))
-        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 10, message: 'taken' })
 
         const result = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(20)
@@ -610,7 +740,7 @@ describe('asyncCheck - failure', () => {
             .fn()
             .mockRejectedValueOnce(new Error('network down'))
             .mockResolvedValueOnce(false)
-        const schema = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const schema = standalone(z.string(), check, { delay: 10, message: 'taken' })
 
         const first = schema.safeParseAsync('ada')
         await vi.advanceTimersByTimeAsync(20)

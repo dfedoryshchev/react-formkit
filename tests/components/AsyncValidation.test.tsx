@@ -112,6 +112,29 @@ describe('debounced async validation through the form', () => {
         expect(check).toHaveBeenCalledTimes(1)
     })
 
+    it('asks even while another field holds a value of the wrong type', async () => {
+        const check = vi.fn(async (value: string) => value !== 'ada')
+        const schema = z.object({
+            username: asyncCheck(required(), check, { delay: 10, message: TAKEN }),
+            age: z.number(),
+        })
+        render(
+            <BasicForm
+                onSubmit={vi.fn()}
+                validationSchema={schema}
+                defaultValues={{ username: '' }}
+                mode="onChange"
+            >
+                <FormField name="username" type="text" label="Username" />
+            </BasicForm>,
+        )
+
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'ada' } })
+
+        await waitFor(() => expect(screen.getByText(TAKEN)).toBeInTheDocument())
+        expect(check).toHaveBeenCalledWith('ada')
+    })
+
     it('keeps the required indicator through the async wrapper', () => {
         const { input } = renderForm(async () => true, 'onChange')
         expect(input).toHaveAttribute('aria-required', 'true')
