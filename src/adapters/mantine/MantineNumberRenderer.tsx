@@ -20,6 +20,7 @@ export const MantineNumberRenderer: React.FC<FieldRenderProps> = ({ field, requi
             onChange={(next) => onChange(next === '' ? undefined : next)}
             onBlur={onBlur}
             label={field.label}
+            description={field.description}
             placeholder={field.placeholder}
             disabled={field.disabled}
             withAsterisk={required ?? schemaRequired}

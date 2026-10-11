@@ -195,7 +195,7 @@ A function in a config, a `showWhen.test` predicate, is compared by identity. De
 the component or memoise it; an arrow written inline in the config is a new function every render
 and rebuilds the schema every render.
 
-`label`, `placeholder`, `options` and `disabled` feed neither derived value. They are read fresh
+`label`, `placeholder`, `description`, `options` and `disabled` feed neither derived value. They are read fresh
 on every render, because `fields` is the array you passed straight back.
 
 A new `defaultValue` reaches the `defaults` the hook returns, not the values of a form that is
@@ -379,7 +379,9 @@ import { mantineRenderers } from '@react-formkit/core/mantine'
 
 Each input is registered through `useController`, so what is entered reaches the payload, the
 required asterisk is read from the schema the same way the native label's is, and a schema error
-shows as the input's `error`. The select's `data` is the field's `options`: it submits the chosen
+shows as the input's `error`. A field's `description` goes in the input's `description` slot, and
+the input reads it and any error as its accessible description; the native renderer shows the same
+text under the control, where it shows an error. The select's `data` is the field's `options`: it submits the chosen
 option's `value`, and `null` while nothing is chosen. The checkbox submits a boolean and carries
 no asterisk, as the native one does not. The number input submits a number, and `undefined`
 rather than `0` once emptied; a value still being typed, such as `1.`, is held as the string

@@ -383,6 +383,43 @@ describe.each(seamPaths)('an array-valued config field (%s)', (path) => {
     )
 })
 
+describe('a config field description on the native renderer', () => {
+    const HINT = 'Shown on your public profile'
+
+    it('renders the description under the control and links it', () => {
+        const { container } = mount('default', [
+            { name: FIELD, type: 'text', label: LABEL, description: HINT },
+        ])
+        const view = within(container)
+        expect(view.getByText(HINT)).toHaveClass('custom-field-message--info')
+        expect(view.getByLabelText(LABEL)).toHaveAccessibleDescription(HINT)
+    })
+
+    it('keeps the description beside a schema error, and the input reads both', async () => {
+        const { container, submit, onSubmit, errors } = mount('default', [
+            {
+                name: FIELD,
+                type: 'text',
+                label: LABEL,
+                description: HINT,
+                validation: [{ rule: 'minLength', value: 3, message: 'Too short' }],
+            },
+        ])
+        const view = within(container)
+        change(view.getByLabelText(LABEL), 'ab')
+        submit()
+        await waitFor(() => expect(errors()).toEqual(['Too short']))
+        expect(view.getByText(HINT)).toBeInTheDocument()
+        expect(view.getByLabelText(LABEL)).toHaveAccessibleDescription(`${HINT} Too short`)
+        expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it('leaves the input undescribed when the config has no description', () => {
+        const { container } = mount('default', [{ name: FIELD, type: 'text', label: LABEL }])
+        expect(within(container).getByLabelText(LABEL)).not.toHaveAttribute('aria-describedby')
+    })
+})
+
 // react-select and react-phone-input-2 number their instances, and React's
 // useId counts per mount, so two renders of the same tree differ in ids alone.
 const normalise = (html: string) =>

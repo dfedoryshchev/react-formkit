@@ -9,6 +9,7 @@ export const NativeFieldRenderer: React.FC<FieldRenderProps> = ({ field, require
         type={field.type}
         label={field.label}
         placeholder={field.placeholder}
+        description={field.description}
         options={field.options as any}
         disabled={field.disabled}
         required={required}

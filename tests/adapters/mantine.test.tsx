@@ -489,6 +489,79 @@ describe('every Mantine control in one form', () => {
     })
 })
 
+describe('descriptions and errors in the Mantine slots', () => {
+    const HINT = 'Shown on your public profile'
+
+    const cases: {
+        field: FormConfig[number]
+        input: (view: ReturnType<typeof within>) => HTMLElement
+    }[] = [
+        {
+            field: { name: 'nickname', type: 'text', label: 'Nickname' },
+            input: (view) => view.getByLabelText('Nickname'),
+        },
+        {
+            field: { name: 'age', type: 'numeric', label: 'Age' },
+            input: (view) => view.getByLabelText('Age'),
+        },
+        {
+            field: {
+                name: 'country',
+                type: 'select',
+                label: 'Country',
+                options: [{ value: 'ca', label: 'Canada' }],
+            },
+            input: (view) => view.getByRole('combobox', { name: 'Country' }),
+        },
+        {
+            field: { name: 'terms', type: 'checkbox', label: 'I agree' },
+            input: (view) => view.getByLabelText('I agree'),
+        },
+        {
+            field: { name: 'startsOn', type: 'date', label: 'Start date' },
+            input: (view) => view.getByLabelText('Start date'),
+        },
+    ]
+
+    it.each(cases)(
+        'puts a $field.type field description in the slot its input reads',
+        ({ field, input }) => {
+            const { view } = mount([{ ...field, description: HINT }])
+            expect(view.getByText(HINT).id).toMatch(/-description$/)
+            expect(input(view)).toHaveAccessibleDescription(HINT)
+        },
+    )
+
+    it.each(cases)(
+        'renders no description slot for a $field.type field without one',
+        ({ field, input }) => {
+            const { container, view } = mount([field])
+            expect(container.querySelector('[id$="-description"]')).toBeNull()
+            expect(input(view)).not.toHaveAttribute('aria-describedby')
+        },
+    )
+
+    it('keeps the description beside a schema error, and the input reads both', async () => {
+        const { view, onSubmit, submit } = mount([
+            {
+                name: 'nickname',
+                type: 'text',
+                label: 'Nickname',
+                description: HINT,
+                validation: [{ rule: 'minLength', value: 3, message: 'Too short' }],
+            },
+        ])
+        await userEvent.type(view.getByLabelText('Nickname'), 'ab')
+        submit()
+        await waitFor(() => expect(view.getByText('Too short')).toBeInTheDocument())
+        expect(view.getByText(HINT)).toBeInTheDocument()
+        const input = view.getByLabelText('Nickname')
+        expect(input).toHaveAccessibleDescription(expect.stringContaining(HINT))
+        expect(input).toHaveAccessibleDescription(expect.stringContaining('Too short'))
+        expect(onSubmit).not.toHaveBeenCalled()
+    })
+})
+
 describe('mixed configs', () => {
     it('renders a type the adapter does not cover through the native control', async () => {
         const { container, view, onSubmit, submit } = mount([

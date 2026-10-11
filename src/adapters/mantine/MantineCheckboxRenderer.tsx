@@ -18,6 +18,7 @@ export const MantineCheckboxRenderer: React.FC<FieldRenderProps> = ({ field }) =
             onChange={(e) => onChange(e.currentTarget.checked)}
             onBlur={onBlur}
             label={field.label}
+            description={field.description}
             disabled={field.disabled}
             error={error?.message}
         />

@@ -21,6 +21,7 @@ export interface FieldConfig {
     type: ControlType
     label?: string
     placeholder?: string
+    description?: string
     defaultValue?: unknown
     options?: Option[]
     validation?: ValidationDescriptor[]

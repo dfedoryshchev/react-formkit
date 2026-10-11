@@ -21,6 +21,7 @@ export const MantineTextRenderer: React.FC<FieldRenderProps> = ({ field, require
             onChange={(e) => onChange(e.currentTarget.value)}
             onBlur={onBlur}
             label={field.label}
+            description={field.description}
             placeholder={field.placeholder}
             disabled={field.disabled}
             withAsterisk={required ?? schemaRequired}

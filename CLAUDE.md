@@ -108,7 +108,7 @@ const hasZip = (v: unknown) => v !== ''
 ```
 
 A new `defaultValue` reaches the returned `defaults`, not the values of a form that is already
-mounted. `label`, `placeholder`, `options` and `disabled` feed neither derived value - `fields` is
+mounted. `label`, `placeholder`, `description`, `options` and `disabled` feed neither derived value - `fields` is
 the array handed straight back, so those are read fresh every render.
 
 **Do not repeat a field name in a config.** `useFormFromConfig` throws during render rather than
@@ -340,7 +340,9 @@ type through `NativeFieldRenderer`, so a mixed config is expected to look mixed.
 its `data` from the field's `options` and submits the chosen `value`, or `null` while nothing is
 chosen. The number input submits a number, or `undefined` once emptied. The date input is the
 browser's date picker, not `@mantine/dates`, and submits a `YYYY-MM-DD` string, so do not install
-`@mantine/dates` or `dayjs` for it and do not expect a `Date` in the payload. **Import it from
+`@mantine/dates` or `dayjs` for it and do not expect a `Date` in the payload. A field's
+`description` lands in each input's Mantine `description` slot and a schema error in its `error`
+slot, both read by the input; put help text there rather than in the `label`. **Import it from
 `@react-formkit/core/mantine`, never from the package root** - the root does not export it, which is
 what keeps `@mantine/core` optional for apps that do not use it.
 

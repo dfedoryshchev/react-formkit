@@ -72,8 +72,8 @@ The registry comes from `RendererContext`, defaulting to `nativeRenderers`, and 
 prop on `ConfigFields` overrides it for one list.
 
 An adapter renderer joins at the same step as the native one but goes around `FormField`: it calls
-`useController` and `useIsFieldRequired` itself and hands the value, the error message and the
-required flag to the library's own input. `adapters/mantine/MantineTextRenderer.tsx` is the model.
+`useController` and `useIsFieldRequired` itself and hands the value, the error message, the
+field's `description` and the required flag to the library's own input. `adapters/mantine/MantineTextRenderer.tsx` is the model.
 
 ## Where a change belongs
 
