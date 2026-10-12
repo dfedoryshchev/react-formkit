@@ -373,6 +373,34 @@ describe('useIsAsyncValidating', () => {
         await waitFor(() => expect(waiting('username')).toBe('false'))
     })
 
+    it.each([
+        ['refined', (s: z.ZodString) => s.refine((v) => v !== 'admin')],
+        ['described', (s: z.ZodString) => s.describe('login name')],
+        ['transformed', (s: z.ZodString) => s.transform((v) => v.trim())],
+    ])('finds the wait on a field %s after asyncCheck', async (_, after) => {
+        const gate = deferred<boolean>()
+        const schema = z.object({
+            username: after(asyncCheck(required(), () => gate.promise, { delay: 10 })),
+        })
+        render(
+            <BasicForm
+                onSubmit={vi.fn()}
+                validationSchema={schema}
+                defaultValues={{ username: '' }}
+                mode="onChange"
+            >
+                <FormField name="username" type="text" label="Username" />
+                <Waiting name="username" />
+            </BasicForm>,
+        )
+
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'ada' } })
+        await waitFor(() => expect(waiting('username')).toBe('true'))
+
+        gate.resolve(true)
+        await waitFor(() => expect(waiting('username')).toBe('false'))
+    })
+
     it('is false for a name the schema has no async check for', async () => {
         const gate = deferred<boolean>()
         renderTwoAsyncFields(

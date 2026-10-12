@@ -27,6 +27,13 @@ describe('buildSchema', () => {
         expect(schema.safeParse({ age: undefined, role: null }).success).toBe(true)
     })
 
+    it('treats an absent numeric key as empty: optional passes, required fails', () => {
+        const optional = buildSchema([{ name: 'age', type: 'numeric' }])
+        const required = buildSchema([{ name: 'age', type: 'numeric', validation: ['required'] }])
+        expect(optional.safeParse({}).success).toBe(true)
+        expect(required.safeParse({}).success).toBe(false)
+    })
+
     it('still applies a non-required field rule when a value is present', () => {
         const schema = buildSchema([{ name: 'age', type: 'numeric', validation: [{ rule: 'min', value: 18 }] }])
         expect(schema.safeParse({ age: 10 }).success).toBe(false)

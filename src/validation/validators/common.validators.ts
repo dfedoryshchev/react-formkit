@@ -5,7 +5,9 @@ export const required = (message = getMessages().required) =>
     z.string().min(1, message).describe('required')
 
 export const requiredNumber = (message = getMessages().required) =>
-    z.number({ required_error: message }).describe('required')
+    z
+        .number({ error: (issue) => (issue.input === undefined ? message : undefined) })
+        .describe('required')
 
 export const minLength = (min: number, message?: string) =>
     z.string().min(min, message || getMessages().minLength(min))

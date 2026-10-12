@@ -1,9 +1,9 @@
-import { z, ZodTypeAny } from 'zod'
+import { z, ZodType } from 'zod'
 import { matchesCondition } from '@/field'
 import { getMessages } from '@/validation/messages'
 import type { FieldConfig, FormConfig, ValidationDescriptor } from './config.types'
 
-const baseFor = (field: FieldConfig): ZodTypeAny => {
+const baseFor = (field: FieldConfig): ZodType => {
     switch (field.type) {
         case 'numeric':
             return z.coerce.number()
@@ -26,7 +26,7 @@ const isArrayField = (type: FieldConfig['type']): boolean =>
 //
 // Read at build time, not at module load: `setMessages` swaps the map, and a
 // schema is expected to carry whatever was active when it was built.
-const applyRule = (schema: ZodTypeAny, rule: ValidationDescriptor): ZodTypeAny => {
+const applyRule = (schema: ZodType, rule: ValidationDescriptor): ZodType => {
     // `required` is handled separately in buildSchema; skip it here.
     if (rule === 'required') return schema
     const messages = getMessages()
@@ -64,7 +64,7 @@ const applyRule = (schema: ZodTypeAny, rule: ValidationDescriptor): ZodTypeAny =
 // simply means not optional (their empty value already fails the base schema).
 // The literal this used to carry ('Required') was the one message in the
 // library that no override could reach.
-const enforceRequired = (schema: ZodTypeAny): ZodTypeAny =>
+const enforceRequired = (schema: ZodType): ZodType =>
     schema instanceof z.ZodString ? schema.min(1, getMessages().required) : schema
 
 // A field carrying `showWhen` is validated only while its condition holds. Its
@@ -73,11 +73,11 @@ const enforceRequired = (schema: ZodTypeAny): ZodTypeAny =>
 // submit with an error the user cannot see or reach.
 interface ConditionalEntry {
     field: FieldConfig
-    schema: ZodTypeAny
+    schema: ZodType
 }
 
-export function buildSchema(config: FormConfig): ZodTypeAny {
-    const shape: Record<string, ZodTypeAny> = {}
+export function buildSchema(config: FormConfig): ZodType {
+    const shape: Record<string, ZodType> = {}
     const conditional: ConditionalEntry[] = []
 
     for (const field of config) {

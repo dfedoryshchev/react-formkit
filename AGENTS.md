@@ -121,7 +121,7 @@ overrides over the current map, runs `build()`, and restores the previous map in
 a throw cannot leak into the next form. Making it async would let two forms interleave and take
 each other's messages.
 
-**That is why `validationSchema` accepts `ZodSchema | (() => ZodSchema)`.** Only a builder can
+**That is why `validationSchema` accepts `ZodType | (() => ZodType)`.** Only a builder can
 run inside the swap. A ready-made schema already carries its strings, so per-form `messages`
 cannot affect it - a real limit, stated in the prop comment rather than papered over.
 
@@ -168,16 +168,20 @@ factory returned and hands back a channel per path; the hook finds the node with
 `ctx.path`, which Zod 4 no longer offers: `asyncCheck` only tags its node, and `withAsyncChecks`
 walks the schema and the value together from the root, handing each tagged field its dotted path
 and adding the issue with that `path`. The walk follows objects, arrays, tuples, records,
-discriminated unions and the optional, nullable, default, effects, readonly, branded, catch and
-pipeline wrappers; a tagged field below anything else (a plain union, a lazy schema) never gets
-its remote check, so a new container type needs a case in `steps` and `innerSchemas` as well as in
-`unwrapField`. The root hook is a preprocess rather than a refinement because Zod 3 skips a
-refinement once anything beneath it has a type error. `BasicForm` applies the wrapper, so it is
-what `ValidationSchemaContext` carries. The consequence to keep in mind: zod methods that clone
-rather than wrap (`.describe()` builds `new This({ ...this._def })`) return an instance the
-channel is not attached to. Wrapping is safe - `unwrapField` in `schema.utils.ts` peels `ZodEffects`, `ZodOptional`,
-`ZodNullable` and `ZodDefault` - so a new wrapper type needs a case there or the indicator silently
-goes dead.
+discriminated unions and the optional, nullable, default, readonly, catch and pipe wrappers; a
+tagged field below anything else (a plain union, a lazy schema) never gets its remote check, so a
+new container type needs a case in `steps` and `innerSchemas` as well as in `unwrapField`. It walks
+the PARSED value, because the root hook is a refinement: a default is already filled in, and a
+field behind a `.transform()` is checked against the transformed value - or not at all once the
+transform changes the type, since the field's own schema then rejects it. The refinement passes
+`when: () => true`, because a plain one is skipped once anything beneath it has a type error; a
+preprocess cannot stand in, since an issue raised on the input side of a pipe skips the schema
+behind it. `BasicForm` applies the wrapper, so it is what `ValidationSchemaContext` carries.
+Methods that add a check (`.refine()`, `.describe()`, `.min()`) clone rather than wrap, and the
+clone records its source as `_zod.parent`; the tag lookup walks that chain, which is why such a
+method after `asyncCheck` keeps the channel. Wrappers are peeled by `unwrapField` in
+`schema.utils.ts` (`ZodPipe`, `ZodOptional`, `ZodNullable` and `ZodDefault`), so a new wrapper
+type needs a case there or the indicator silently goes dead.
 
 **React Hook Form's per-field `isValidating` cannot stand in for it.** Measured against RHF 7.71
 under `zodResolver`: editing one field marks only that field validating even while a sibling's
@@ -219,7 +223,7 @@ flag, which RHF's own post-submit update then sets back; the two props do work t
 that is pinned by a test rather than left resting on the ordering staying put.
 
 **Required detection is inferred from the schema, not declared.** `useIsFieldRequired` reads the
-resolved schema, so it has to unwrap wrappers (`ZodEffects` among them) to find the field. A
+resolved schema, so it has to unwrap wrappers (`ZodPipe` among them) to find the field. A
 change that wraps the schema and forgets the unwrap silently drops the required marker from
 every field on the form rather than failing loudly.
 

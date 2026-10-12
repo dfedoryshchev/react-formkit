@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { FormProvider, UseFormProps } from 'react-hook-form'
-import { ZodSchema } from 'zod'
+import { ZodType } from 'zod'
 import { useFormConfig } from '@/validation/useFormConfig'
 import { FormLevelValidator } from '@/validation/useFormLevelValidators'
 import { ValidationSchemaContext } from '@/validation/ValidationSchemaContext'
@@ -15,7 +15,7 @@ interface BasicFormProps {
     onSubmit: (data: any) => any
     // Pass a builder function instead of a schema when using `messages`: the
     // overrides can only reach the validators while the schema is being built.
-    validationSchema?: ZodSchema | (() => ZodSchema)
+    validationSchema?: ZodType | (() => ZodType)
     defaultValues?: Record<string, any>
     children: React.ReactNode
     resetOnSubmit?: boolean

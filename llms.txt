@@ -5,7 +5,8 @@
 > required indicators, the validation messages and the rendered controls from that single
 > declaration.
 
-Version 0.2.1, MIT. Built against React 19, react-hook-form 7, @hookform/resolvers 5 and zod 3.
+Version 0.2.1, MIT. Built against React 19, react-hook-form 7, @hookform/resolvers 5.1+ and
+zod 4.3+; zod 3 is not supported.
 `react-select` and `react-phone-input-2` back the multiselect and phone controls, but the package
 root imports both at the top level, so they have to be installed even by an app that uses neither.
 Type declarations are not generated yet, so the published package ships without `.d.ts` files.
@@ -71,8 +72,8 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   place, or beside it under `keepFormOnSuccess`. Both read `formState.isSubmitSuccessful`, so a
   schema error or a handler that throws never reaches them, and the content clears again while
   the next submit is in flight.
-- [src/form/Form.tsx](src/form/Form.tsx): `validationSchema` accepts `ZodSchema` **or**
-  `() => ZodSchema`. Per-form `messages` only affect a builder, because a ready-made schema
+- [src/form/Form.tsx](src/form/Form.tsx): `validationSchema` accepts `ZodType` **or**
+  `() => ZodType`. Per-form `messages` only affect a builder, because a ready-made schema
   already carries its strings. `mode` is passed straight to React Hook Form.
 - [src/validation/validators/async.validators.ts](src/validation/validators/async.validators.ts):
   `asyncCheck(base, check, options)` debounces a remote check onto a field. **Its debounce state
@@ -85,8 +86,10 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   `useIsAsyncValidating(fieldName)` is true while that field waits on its remote check, and a burst
   of keystrokes is one wait rather than one per key. **Do not substitute React Hook Form's per-field
   `isValidating`** - under a resolver the parse is the whole schema, so RHF marks the field whose
-  event started it and marks every mounted field on submit. Keep `asyncCheck` outermost: zod methods
-  that clone rather than wrap, `.describe()` among them, detach the pending channel.
+  event started it and marks every mounted field on submit. `.optional()`, `.refine()` and
+  `.describe()` applied after `asyncCheck` keep the pending channel. Keep `.transform()` off a field
+  carrying `asyncCheck`: the check runs on the parsed value, so a transform that changes the type
+  leaves it unasked.
 - [src/config/buildSchema.ts](src/config/buildSchema.ts): turns `ValidationDescriptor[]` into a
   Zod schema. An explicit `message` on a descriptor wins; otherwise the message map supplies the
   default. A `showWhen` field is validated only while its condition holds.

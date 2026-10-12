@@ -1,11 +1,11 @@
 import { useEffect, useMemo } from 'react'
-import { useForm, UseFormProps } from 'react-hook-form'
+import { FieldValues, useForm, UseFormProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ZodSchema } from 'zod'
+import { ZodType } from 'zod'
 import { FormLevelValidator, useFormLevelValidators } from './useFormLevelValidators'
 
 interface FormConfig {
-    validationSchema?: ZodSchema
+    validationSchema?: ZodType
     defaultValues?: Record<string, any>
     formLevelValidators?: FormLevelValidator[]
     // RHF's validation trigger. Left to RHF's own default when unset.
@@ -23,11 +23,7 @@ export const useFormConfig = ({
     const formOptions = useMemo<UseFormProps>(() => {
         const opts: UseFormProps = { defaultValues }
         if (mode) opts.mode = mode
-        if (schema) {
-            // @hookform/resolvers v5 overloads zodResolver for zod 3 and zod 4;
-            // our zod 3 ZodSchema needs a cast to match the v3 overload.
-            opts.resolver = zodResolver(schema as any)
-        }
+        if (schema) opts.resolver = zodResolver(schema as ZodType<FieldValues, FieldValues>)
         return opts
     }, [schema, defaultValues, mode])
 

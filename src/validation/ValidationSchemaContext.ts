@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
-import { ZodSchema } from 'zod'
+import { ZodType } from 'zod'
 
-export const ValidationSchemaContext = createContext<ZodSchema | undefined>(undefined)
+export const ValidationSchemaContext = createContext<ZodType | undefined>(undefined)
 
 export const useValidationSchema = () => {
     return useContext(ValidationSchemaContext)

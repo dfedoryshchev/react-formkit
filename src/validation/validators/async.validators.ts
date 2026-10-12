@@ -1,21 +1,17 @@
 import {
     z,
     ZodArray,
-    ZodBranded,
     ZodCatch,
     ZodDefault,
     ZodDiscriminatedUnion,
-    ZodEffects,
     ZodNullable,
     ZodObject,
     ZodOptional,
-    ZodPipeline,
+    ZodPipe,
     ZodReadonly,
     ZodRecord,
     ZodTuple,
     ZodType,
-    ZodTypeAny,
-    ZodTypeDef,
 } from 'zod'
 import { getMessages } from '../messages'
 
@@ -54,13 +50,27 @@ interface AsyncCheckTag {
 const tags = new WeakMap<object, AsyncCheckTag>()
 
 // A `withAsyncChecks` wrapper and the schema it runs the checks of, both ways.
-const rootOf = new WeakMap<object, ZodTypeAny>()
-const wrapperOf = new WeakMap<object, ZodTypeAny>()
+const rootOf = new WeakMap<object, ZodType>()
+const wrapperOf = new WeakMap<object, ZodType>()
+
+// `.refine()`, `.describe()` and the other check-adding methods return a clone
+// rather than a wrapper, and the clone keeps the schema it came from as
+// `_zod.parent`. The tag and the wrapper mark are found by walking that chain.
+const findUp = <T>(schema: unknown, pick: (node: object) => T | undefined): T | undefined => {
+    let current: unknown = schema
+    while (typeof current === 'object' && current !== null) {
+        const found = pick(current)
+        if (found !== undefined) return found
+        current = (current as { _zod?: { parent?: unknown } })._zod?.parent
+    }
+    return undefined
+}
 
 const tagOf = (schema: unknown): AsyncCheckTag | undefined =>
-    typeof schema === 'object' && schema !== null
-        ? tags.get(rootOf.get(schema) ?? schema)
-        : undefined
+    findUp(schema, (node) => tags.get(node))
+
+const isWrapped = (schema: unknown): boolean =>
+    findUp(schema, (node) => (rootOf.has(node) ? true : undefined)) ?? false
 
 /**
  * The pending channel of an `asyncCheck` schema for one field, or `undefined`
@@ -68,10 +78,6 @@ const tagOf = (schema: unknown): AsyncCheckTag | undefined =>
  * (`username`, `contacts.0.email`); the default addresses a schema being parsed
  * on its own rather than as a member of an object. In a component, prefer
  * `useIsAsyncValidating`, which finds the field's schema and subscribes for you.
- *
- * Zod methods that clone rather than wrap - `.describe()` among them - produce
- * a new instance the channel is not attached to, so apply them to the base
- * schema and keep `asyncCheck` outermost.
  */
 export const getAsyncCheckChannel = (schema: unknown, path = ''): AsyncCheckChannel | undefined =>
     tagOf(schema)?.channel(path)
@@ -128,11 +134,11 @@ interface FieldState {
  * schema stable (module scope, or the builder that `BasicForm` memoises) or
  * every render hands the field a fresh channel that has never seen a keystroke.
  */
-export const asyncCheck = <T extends ZodTypeAny>(
+export const asyncCheck = <T extends ZodType>(
     base: T,
-    check: AsyncCheckFn<T['_output']>,
+    check: AsyncCheckFn<z.output<T>>,
     options: AsyncCheckOptions = {},
-): ZodEffects<T, T['_output'], T['_input']> => {
+): T => {
     const { delay = DEFAULT_DELAY, message = getMessages().asyncCheck } = options
 
     const fields = new Map<string, FieldState>()
@@ -215,7 +221,7 @@ export const asyncCheck = <T extends ZodTypeAny>(
             finish(state, mine, value, state.settled.ok)
             return
         }
-        Promise.resolve(check(value)).then(
+        Promise.resolve(check(value as z.output<T>)).then(
             (ok) => finish(state, mine, value, ok),
             () => finish(state, mine, value, undefined),
         )
@@ -253,7 +259,7 @@ export const asyncCheck = <T extends ZodTypeAny>(
         message,
         channel: (path) => stateFor(path).channel,
         verdict: (path, value) => {
-            const decide = (own: z.SafeParseReturnType<unknown, unknown>) => {
+            const decide = (own: z.ZodSafeParseResult<unknown>) => {
                 const state = stateFor(path)
                 if (!own.success || isBlank(own.data)) {
                     cancel(state)
@@ -264,7 +270,7 @@ export const asyncCheck = <T extends ZodTypeAny>(
             // Synchronously when the field allows it: a parse that waits a tick
             // longer than needed lets a verdict already in flight settle the
             // window before this newer value can claim it.
-            let own: z.SafeParseReturnType<unknown, unknown>
+            let own: z.ZodSafeParseResult<unknown>
             try {
                 own = schema.safeParse(value)
             } catch {
@@ -287,13 +293,13 @@ type Step = [schema: unknown, value: unknown, segment?: string | number]
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
 
-// Wrappers that hand their inner schemas the value they were given.
+// Wrappers that hand their inner schemas the value they were given. The walk
+// reads the parsed value, so a default has already been filled in.
 const sameValueInner = (node: unknown): unknown[] | undefined => {
-    if (node instanceof ZodEffects) return [node.innerType()]
-    if (node instanceof ZodReadonly) return [node._def.innerType]
-    if (node instanceof ZodBranded) return [node.unwrap()]
-    if (node instanceof ZodCatch) return [node.removeCatch()]
-    if (node instanceof ZodPipeline) return [node._def.in, node._def.out]
+    if (node instanceof ZodReadonly || node instanceof ZodCatch || node instanceof ZodDefault) {
+        return [node.unwrap()]
+    }
+    if (node instanceof ZodPipe) return [node.in, node.out]
     return undefined
 }
 
@@ -301,11 +307,10 @@ const innerSchemas = (node: unknown): unknown[] => {
     const same = sameValueInner(node)
     if (same) return same
     if (node instanceof ZodOptional || node instanceof ZodNullable) return [node.unwrap()]
-    if (node instanceof ZodDefault) return [node.removeDefault()]
     if (node instanceof ZodObject) return Object.values(node.shape)
     if (node instanceof ZodArray) return [node.element]
-    if (node instanceof ZodTuple) return [...node.items, node._def.rest]
-    if (node instanceof ZodRecord) return [node.valueSchema]
+    if (node instanceof ZodTuple) return [...node._zod.def.items, node._zod.def.rest]
+    if (node instanceof ZodRecord) return [node.valueType]
     if (node instanceof ZodDiscriminatedUnion) return [...node.options]
     return []
 }
@@ -315,9 +320,6 @@ const steps = (node: unknown, value: unknown): Step[] => {
     if (same) return same.map((inner) => [inner, value])
     if (node instanceof ZodOptional) return value === undefined ? [] : [[node.unwrap(), value]]
     if (node instanceof ZodNullable) return value === null ? [] : [[node.unwrap(), value]]
-    if (node instanceof ZodDefault) {
-        return [[node.removeDefault(), value === undefined ? node._def.defaultValue() : value]]
-    }
     if (node instanceof ZodObject) {
         if (!isRecord(value)) return []
         return Object.entries(node.shape as Record<string, unknown>).map(([key, field]) => [
@@ -331,15 +333,19 @@ const steps = (node: unknown, value: unknown): Step[] => {
     }
     if (node instanceof ZodTuple) {
         if (!Array.isArray(value)) return []
-        return value.map((item, index) => [node.items[index] ?? node._def.rest, item, index])
+        const { items, rest } = node._zod.def
+        return value.map((item, index) => [items[index] ?? rest, item, index])
     }
     if (node instanceof ZodRecord) {
         if (!isRecord(value)) return []
-        return Object.entries(value).map(([key, item]) => [node.valueSchema, item, key])
+        return Object.entries(value).map(([key, item]) => [node.valueType, item, key])
     }
     if (node instanceof ZodDiscriminatedUnion) {
         if (!isRecord(value)) return []
-        const option = node.optionsMap.get(value[node.discriminator] as never)
+        const key = node._zod.def.discriminator
+        const option = node.options.find((candidate) =>
+            candidate._zod.propValues?.[key]?.has(value[key] as never),
+        )
         return option ? [[option, value]] : []
     }
     return []
@@ -348,8 +354,8 @@ const steps = (node: unknown, value: unknown): Step[] => {
 const reachesCheck = (node: unknown, seen: Set<unknown>): boolean => {
     if (typeof node !== 'object' || node === null || seen.has(node)) return false
     seen.add(node)
-    if (tags.has(node)) return true
-    if (rootOf.has(node)) return false
+    if (isWrapped(node)) return false
+    if (tagOf(node)) return true
     return innerSchemas(node).some((inner) => reachesCheck(inner, seen))
 }
 
@@ -360,22 +366,26 @@ const collect = (
     found: FoundCheck[],
 ): void => {
     if (typeof node !== 'object' || node === null) return
-    const tag = tags.get(node)
+    // A nested wrapper runs its own checks.
+    if (isWrapped(node)) return
+    const tag = tagOf(node)
     if (tag) {
         found.push({ tag, path, value })
         return
     }
-    // A nested wrapper runs its own checks.
-    if (rootOf.has(node)) return
     for (const [inner, innerValue, segment] of steps(node, value)) {
         collect(inner, innerValue, segment === undefined ? path : [...path, segment], found)
     }
 }
 
-const runChecks = (root: ZodTypeAny, value: unknown, ctx: z.RefinementCtx): unknown => {
+const runChecks = (
+    root: ZodType,
+    value: unknown,
+    ctx: z.RefinementCtx,
+): Promise<void> | undefined => {
     const found: FoundCheck[] = []
     collect(root, value, [], found)
-    if (!found.length) return value
+    if (!found.length) return undefined
 
     return Promise.all(
         found.map((check) => check.tag.verdict(check.path.join('.'), check.value)),
@@ -383,9 +393,8 @@ const runChecks = (root: ZodTypeAny, value: unknown, ctx: z.RefinementCtx): unkn
         verdicts.forEach((ok, index) => {
             if (ok) return
             const { tag, path } = found[index]
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: tag.message, path })
+            ctx.addIssue({ code: 'custom', message: tag.message, path })
         })
-        return value
     })
 }
 
@@ -398,17 +407,19 @@ const runChecks = (root: ZodTypeAny, value: unknown, ctx: z.RefinementCtx): unkn
  * needs it, or its async checks never run. Applying it more than once is
  * harmless, and a schema with no `asyncCheck` in it comes back unchanged.
  */
-export const withAsyncChecks = <T extends ZodTypeAny>(
-    schema: T,
-): ZodType<T['_output'], ZodTypeDef, T['_input']> => {
-    if (rootOf.has(schema) || !reachesCheck(schema, new Set())) return schema
+export const withAsyncChecks = <T extends ZodType>(schema: T): T => {
+    if (isWrapped(schema) || !reachesCheck(schema, new Set())) return schema
     const existing = wrapperOf.get(schema)
-    if (existing) return existing
+    if (existing) return existing as T
 
-    // Zod 3 skips a refinement once anything beneath it has a type error, so a
-    // root refinement would silence every remote check on the form while one
-    // unrelated field holds the wrong type. A preprocess runs whatever follows.
-    const wrapper = z.preprocess((value, ctx) => runChecks(schema, value, ctx), schema)
+    // A refinement is skipped once anything beneath it has a type error, which
+    // would silence every remote check on the form while one unrelated field
+    // holds the wrong type; `when` runs it regardless. A preprocess cannot
+    // stand in: an issue raised on the input side of a pipe skips the schema
+    // behind it, hiding every other field's error while a check rejects.
+    const wrapper = schema.superRefine((value, ctx) => runChecks(schema, value, ctx), {
+        when: () => true,
+    })
     rootOf.set(wrapper, schema)
     wrapperOf.set(schema, wrapper)
     return wrapper

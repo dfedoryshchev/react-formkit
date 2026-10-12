@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
     required,
+    requiredNumber,
     minLength,
     maxLength,
     email,
@@ -19,6 +20,22 @@ describe('required', () => {
     })
     it('carries the "required" description', () => {
         expect(required().description).toBe('required')
+    })
+})
+
+describe('requiredNumber', () => {
+    const firstMessage = (value: unknown) => {
+        const result = requiredNumber('Enter a number').safeParse(value)
+        return result.success ? undefined : result.error.issues[0].message
+    }
+    it('shows its message for a missing value', () => {
+        expect(firstMessage(undefined)).toBe('Enter a number')
+    })
+    it('keeps the type message for a value of the wrong type', () => {
+        expect(firstMessage('12')).not.toBe('Enter a number')
+    })
+    it('accepts a number', () => {
+        expect(requiredNumber().parse(12)).toBe(12)
     })
 })
 

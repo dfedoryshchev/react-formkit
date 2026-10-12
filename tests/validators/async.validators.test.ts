@@ -18,10 +18,10 @@ const deferred = <T>() => {
     return { promise, resolve, reject }
 }
 
-const firstError = (result: z.SafeParseReturnType<unknown, unknown>) =>
+const firstError = (result: z.ZodSafeParseResult<unknown>) =>
     result.success ? undefined : result.error.issues[0].message
 
-const issuePaths = (result: z.SafeParseReturnType<unknown, unknown>) =>
+const issuePaths = (result: z.ZodSafeParseResult<unknown>) =>
     result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))
 
 const standalone = (...args: Parameters<typeof asyncCheck>) => withAsyncChecks(asyncCheck(...args))
@@ -603,32 +603,32 @@ describe('asyncCheck - one instance on more than one field', () => {
     })
 })
 
-const runEffect = (node: z.ZodTypeAny, value: unknown, ctx: z.RefinementCtx) => {
-    const { effect } = (node as z.ZodEffects<z.ZodTypeAny>)._def
-    if (effect.type === 'refinement') return effect.refinement(value, ctx)
-    return effect.transform(value, ctx)
+// A schema's own checks, run on a bare payload: a value and an issue list.
+const runOwnChecks = async (node: z.ZodType, value: unknown) => {
+    const payload = { value, issues: [] as unknown[] }
+    await Promise.all(
+        (node._zod.def.checks ?? []).map((check) => check._zod.check(payload as never)),
+    )
+    return payload.issues
 }
 
 describe('asyncCheck - run from the schema root', () => {
-    // The context Zod 4 hands a check carries no path, so neither the field
+    // The payload Zod 4 hands a check carries no path, so neither the field
     // nor the root may read one.
-    it('needs no parse path from the refinement context', async () => {
+    it('needs no parse path from the check payload', async () => {
         const check = vi.fn().mockResolvedValue(false)
-        const addIssue = vi.fn()
-        const ctx = { addIssue } as unknown as z.RefinementCtx
         const field = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
 
-        await runEffect(field, 'ada', ctx)
+        expect(await runOwnChecks(field, 'ada')).toEqual([])
 
         const schema = withAsyncChecks(z.object({ username: field }))
-        const run = runEffect(schema, { username: 'ada' }, ctx)
+        const run = runOwnChecks(schema, { username: 'ada' })
         await vi.advanceTimersByTimeAsync(20)
-        await run
 
         expect(check).toHaveBeenCalledTimes(1)
-        expect(addIssue).toHaveBeenCalledWith(
+        expect(await run).toEqual([
             expect.objectContaining({ message: 'taken', path: ['username'] }),
-        )
+        ])
     })
 
     it('still asks when another field holds a value of the wrong type', async () => {
@@ -699,6 +699,23 @@ describe('asyncCheck - run from the schema root', () => {
 
         expect(issuePaths(await result)).toEqual(['a', 'c', 'group.rows.0.d'])
         expect(check).toHaveBeenCalledWith('dflt')
+    })
+
+    it('keeps the check on a field refined or described after asyncCheck', async () => {
+        const check = vi.fn().mockResolvedValue(false)
+        const name = asyncCheck(z.string(), check, { delay: 10, message: 'taken' })
+        const refined = name.refine((value) => value !== 'admin', 'reserved')
+        const described = name.describe('login name')
+        const schema = withAsyncChecks(z.object({ a: refined, b: described }))
+
+        expect(getAsyncCheckChannel(refined, 'a')).toBeDefined()
+        expect(getAsyncCheckChannel(described, 'b')).toBeDefined()
+
+        const result = schema.safeParseAsync({ a: 'x', b: 'y' })
+        await vi.advanceTimersByTimeAsync(20)
+
+        expect(issuePaths(await result)).toEqual(['a', 'b'])
+        expect(check).toHaveBeenCalledTimes(2)
     })
 
     it('wraps once however often it is applied', async () => {

@@ -1,13 +1,13 @@
 import { useMemo, useSyncExternalStore } from 'react'
-import { ZodSchema } from 'zod'
+import { ZodType } from 'zod'
 import { useValidationSchema } from './ValidationSchemaContext'
 import { fieldAt, unwrapField } from './schema.utils'
 import { AsyncCheckChannel, getAsyncCheckChannel } from './validators/async.validators'
 
-// `asyncCheck` usually is the field schema, but `.optional()` and a further
-// `.refine()` wrap it, so walk down to the first node that owns a channel.
+// `asyncCheck` usually is the field schema, but `.optional()` and a transform
+// wrap it, so walk down to the first node that owns a channel.
 const findChannel = (
-    schema: ZodSchema | undefined,
+    schema: ZodType | undefined,
     fieldName: string,
 ): AsyncCheckChannel | undefined => {
     if (!schema) return undefined

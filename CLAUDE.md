@@ -435,9 +435,12 @@ question under a resolver: the resolver parses the whole schema, so RHF marks th
 started the parse rather than the fields that are waiting on a request, and on submit it marks every
 mounted field whether it has a remote check or not.
 
-**Keep `asyncCheck` outermost.** Zod methods that clone rather than wrap - `.describe()` among them -
-return an instance the pending channel is not attached to, and the hook then reads false forever.
-Wrapping is fine: `.optional()` and a further `.refine()` both keep it reachable.
+**Methods after `asyncCheck` keep the indicator.** `.optional()`, `.refine()` and `.describe()` all
+leave the pending channel reachable.
+
+**Keep `.transform()` off a field that carries `asyncCheck`.** The check runs on the parsed value,
+so behind a transform it is asked about the transformed value rather than what was typed, and not
+asked at all once the transform changes the value's type.
 
 ## Styling
 
