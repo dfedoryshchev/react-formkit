@@ -2,7 +2,10 @@ import { z } from 'zod'
 import { getMessages } from '../messages'
 
 export const required = (message = getMessages().required) =>
-    z.string().min(1, message).describe('required')
+    z
+        .string({ error: (issue) => (issue.input === undefined ? message : undefined) })
+        .min(1, message)
+        .describe('required')
 
 export const requiredNumber = (message = getMessages().required) =>
     z

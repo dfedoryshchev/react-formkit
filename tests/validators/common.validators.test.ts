@@ -10,6 +10,7 @@ import {
     notZero,
     matchesRegex,
 } from '../../src/validation/validators/common.validators'
+import { defaultMessages, setMessages } from '../../src/validation/messages'
 
 describe('required', () => {
     it('rejects empty string', () => {
@@ -20,6 +21,28 @@ describe('required', () => {
     })
     it('carries the "required" description', () => {
         expect(required().description).toBe('required')
+    })
+
+    const firstMessage = (schema: ReturnType<typeof required>, value: unknown) => {
+        const result = schema.safeParse(value)
+        return result.success ? undefined : result.error.issues[0].message
+    }
+    it('shows its message for a missing value', () => {
+        expect(firstMessage(required('Enter a name'), undefined)).toBe('Enter a name')
+    })
+    it('shows the message map text for a missing value', () => {
+        expect(firstMessage(required(), undefined)).toBe(defaultMessages.required)
+    })
+    it('shows an overridden map text for a missing value', () => {
+        setMessages({ required: 'Champ obligatoire' })
+        try {
+            expect(firstMessage(required(), undefined)).toBe('Champ obligatoire')
+        } finally {
+            setMessages()
+        }
+    })
+    it('keeps the type message for a value of the wrong type', () => {
+        expect(firstMessage(required('Enter a name'), 12)).not.toBe('Enter a name')
     })
 })
 
