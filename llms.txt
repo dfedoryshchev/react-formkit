@@ -50,10 +50,13 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   `nativeRenderers`, `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`,
   `fieldRenderProps`.
 - [src/adapters/mantine/index.ts](src/adapters/mantine/index.ts): the `@react-formkit/core/mantine` entry
-  point - `mantineRenderers` (a registry routing `text`, `numeric`, `select`, `checkbox` and
-  `date` to Mantine and everything else to `NativeFieldRenderer`), `MantineTextRenderer`,
-  `MantineNumberRenderer`, `MantineSelectRenderer`, `MantineCheckboxRenderer` and
-  `MantineDateRenderer`.
+  point - `mantineRenderers` (a registry routing every control type but `phone` to Mantine and
+  `phone` to `NativeFieldRenderer`) and one renderer per covered type: `MantineTextRenderer`,
+  `MantineNumberRenderer`, `MantineTextareaRenderer`, `MantineSelectRenderer`,
+  `MantineCheckboxRenderer`, `MantineRadioRenderer`, `MantineEmailRenderer`, `MantineUrlRenderer`,
+  `MantineDateRenderer`, `MantineTimeRenderer`, `MantineDateTimeRenderer`,
+  `MantineCheckboxGroupRenderer`, `MantineSwitchRenderer`, `MantinePasswordRenderer`,
+  `MantineMultiSelectRenderer`, `MantineAutocompleteRenderer` and `MantineTagsRenderer`.
 
 ## Behaviour worth knowing before generating code
 
@@ -111,9 +114,10 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   **A nested provider replaces the registry above it rather than merging.** A renderer that does
   not go through `FormField` or `useController` is not registered with react-hook-form: the schema
   still validates that field against its default and nothing typed into it reaches the payload.
-  The one UI-library adapter is Mantine, and it covers `text`, `numeric`, `select`, `checkbox`
-  and `date`; it needs a `MantineProvider` above it. Its date input is a `TextInput` of type
-  `date` submitting a `YYYY-MM-DD` string, so it needs no `@mantine/dates`. A field's
+  The one UI-library adapter is Mantine, and it covers every control type but `phone`; it needs
+  a `MantineProvider` above it. Its date, time and datetime inputs are `TextInput`s of the
+  browser types submitting the browser's strings, so it needs no `@mantine/dates`. Its
+  `autocomplete` and `multi-autocomplete` suggest option labels and submit free text. A field's
   `description` fills each Mantine input's `description` slot beside its `error`; the native
   renderer shows it under the control, where it shows an error.
 - [src/field/ConditionalField.tsx](src/field/ConditionalField.tsx): conditions are `is`, `isNot`

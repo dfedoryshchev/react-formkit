@@ -359,10 +359,27 @@ cover several types; anything it does not handle belongs in `byType` under anoth
 
 ### Mantine
 
-`@react-formkit/core/mantine` exports `mantineRenderers`, a registry that renders `text` fields as a
-Mantine `TextInput`, `numeric` as a `NumberInput`, `select` as a `Select`, `checkbox` as a
-`Checkbox` and `date` as a `TextInput` of type `date`, and sends every other type to
-`NativeFieldRenderer`. It needs a `MantineProvider` above it, like any Mantine component:
+`@react-formkit/core/mantine` exports `mantineRenderers`, a registry that renders every control
+type but `phone` with a Mantine component, and sends `phone` to `NativeFieldRenderer`, since
+Mantine has no phone input:
+
+| Type | Mantine component |
+|---|---|
+| `text`, `email`, `url` | `TextInput` of that type |
+| `date`, `time`, `datetime` | `TextInput` of type `date`, `time`, `datetime-local` |
+| `numeric` | `NumberInput` |
+| `textarea` | `Textarea` |
+| `password` | `PasswordInput` |
+| `select` | `Select` |
+| `multiselect` | `MultiSelect` |
+| `autocomplete` | `Autocomplete` |
+| `multi-autocomplete` | `TagsInput` |
+| `checkbox` | `Checkbox` |
+| `checkbox-group` | `Checkbox.Group` |
+| `radio` | `Radio.Group` |
+| `switch` | `Switch` |
+
+It needs a `MantineProvider` above it, like any Mantine component:
 
 ```tsx
 import '@mantine/core/styles.css'
@@ -382,15 +399,20 @@ required asterisk is read from the schema the same way the native label's is, an
 shows as the input's `error`. A field's `description` goes in the input's `description` slot, and
 the input reads it and any error as its accessible description; the native renderer shows the same
 text under the control, where it shows an error. The select's `data` is the field's `options`: it submits the chosen
-option's `value`, and `null` while nothing is chosen. The checkbox submits a boolean and carries
-no asterisk, as the native one does not. The number input submits a number, and `undefined`
+option's `value`, and `null` while nothing is chosen; the radio group does the same with one
+`Radio` per option. The multiselect and the checkbox group submit an array of the chosen option
+values, `[]` while nothing is chosen. The autocomplete and the tags input suggest the options'
+labels but take free text, so they submit what is in the box: a string for the autocomplete, an
+array of tags for the tags input, which keeps a tag still being typed when focus leaves it, as the
+native one does. The checkbox and the switch submit a boolean and carry no asterisk, as the native
+ones do not. The number input submits a number, and `undefined`
 rather than `0` once emptied; a value still being typed, such as `1.`, is held as the string
-Mantine reports until the config schema coerces it on submit. The date input is the browser's own
-date picker in a Mantine wrapper, so `@mantine/dates` and `dayjs` are not needed: it submits the
-day as a `YYYY-MM-DD` string, as the native control does, and `''` while empty.
-`MantineTextRenderer`, `MantineNumberRenderer`, `MantineSelectRenderer`,
-`MantineCheckboxRenderer` and `MantineDateRenderer` are exported on their own too, for a registry
-of your own.
+Mantine reports until the config schema coerces it on submit. The date, time and datetime inputs
+are the browser's own pickers in a Mantine wrapper, so `@mantine/dates` and `dayjs` are not
+needed: they submit the browser's strings (`YYYY-MM-DD`, `HH:MM`, `YYYY-MM-DDTHH:MM`), as the
+native controls do, and `''` while empty.
+Each renderer is exported on its own too (`MantineTextRenderer`, `MantineRadioRenderer`,
+`MantineTagsRenderer` and so on, one per entry in the table), for a registry of your own.
 
 ### Known limitations
 - A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a form that is already mounted.
@@ -399,7 +421,7 @@ of your own.
 - No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
-- The Mantine adapter covers `text`, `numeric`, `select`, `checkbox` and `date`; every other type in a config still renders through the native controls.
+- The Mantine adapter covers every control type but `phone`, which still renders through the native control.
 - The loading overlay is styled inline, `z-index: 10` included, so `.fk-form-loading-overlay` can add to it but cannot restyle what is set there.
 
 ## Theming
