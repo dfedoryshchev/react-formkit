@@ -60,7 +60,10 @@
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "files": [
-    "dist"
+    "dist",
+    "llms.txt",
+    "CLAUDE.md",
+    "AGENTS.md"
   ],
   "exports": {
     ".": {
