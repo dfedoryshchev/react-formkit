@@ -802,6 +802,38 @@ describe('a config checkbox-group field through the Mantine renderer', () => {
             expect(view.getByLabelText(label)).toBeDisabled()
         }
     })
+
+    describe('with numeric option values', () => {
+        const numeric = [
+            {
+                name: 'seats',
+                type: 'checkbox-group',
+                label: 'Seats',
+                options: [
+                    { value: 1, label: 'One' },
+                    { value: 2, label: 'Two' },
+                ],
+            },
+        ] as unknown as FormConfig
+
+        it('hands the ticked values to onSubmit as numbers', async () => {
+            const { view, onSubmit, submit } = mount(numeric)
+            await userEvent.click(view.getByLabelText('Two'))
+            submit()
+            await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+            expect(onSubmit.mock.calls[0][0]).toEqual({ seats: [2] })
+        })
+
+        it('shows a numeric default ticked and keeps it a number alongside a new tick', async () => {
+            const { view, onSubmit, submit } = mount([{ ...numeric[0], defaultValue: [2] }])
+            expect(view.getByLabelText('Two')).toBeChecked()
+            expect(view.getByLabelText('One')).not.toBeChecked()
+            await userEvent.click(view.getByLabelText('One'))
+            submit()
+            await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+            expect(onSubmit.mock.calls[0][0]).toEqual({ seats: [2, 1] })
+        })
+    })
 })
 
 describe('a config multiselect field through the Mantine renderer', () => {

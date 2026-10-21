@@ -12,21 +12,25 @@ export const MantineCheckboxGroupRenderer: React.FC<FieldRenderProps> = ({ field
         fieldState: { error },
     } = useController({ name: field.name, control })
 
+    const options = field.options ?? []
+    const toOptionValue = (raw: string): unknown =>
+        options.find((option) => String(option.value) === raw)?.value ?? raw
+
     return (
         <Checkbox.Group
             name={name}
-            value={value ?? []}
-            onChange={(next) => onChange(next)}
+            value={((value as unknown[] | undefined) ?? []).map(String)}
+            onChange={(next) => onChange(next.map(toOptionValue))}
             label={field.label}
             description={field.description}
             withAsterisk={required ?? schemaRequired}
             error={error?.message}
         >
             <Group mt="xs">
-                {(field.options ?? []).map((option) => (
+                {options.map((option) => (
                     <Checkbox
-                        key={option.value}
-                        value={option.value}
+                        key={String(option.value)}
+                        value={String(option.value)}
                         label={option.label}
                         disabled={field.disabled}
                         onBlur={onBlur}
