@@ -42,26 +42,39 @@ const encode = (_key: string, value: unknown): unknown => {
     return value
 }
 
-const schemaSignatureOf = (config: FormConfig) =>
-    JSON.stringify(
-        config.map((f) => [f.name, f.type, f.validation, f.showWhen]),
-        encode,
+const schemaInputs = (config: FormConfig): unknown[] =>
+    config.map((f) =>
+        f.type === 'group'
+            ? [f.name, f.type, schemaInputs(f.fields)]
+            : [f.name, f.type, f.validation, f.showWhen],
     )
 
-const defaultsSignatureOf = (config: FormConfig) =>
-    JSON.stringify(
-        config.map((f) => [f.name, f.type, f.defaultValue]),
-        encode,
+const defaultsInputs = (config: FormConfig): unknown[] =>
+    config.map((f) =>
+        f.type === 'group'
+            ? [f.name, f.type, defaultsInputs(f.fields)]
+            : [f.name, f.type, f.defaultValue],
     )
 
-const duplicateNames = (config: FormConfig): string[] => {
+const defaultsOf = (config: FormConfig): Record<string, unknown> =>
+    Object.fromEntries(
+        config.map((f) => [
+            f.name,
+            f.type === 'group' ? defaultsOf(f.fields) : (f.defaultValue ?? emptyValueFor(f.type)),
+        ]),
+    )
+
+const duplicateNames = (config: FormConfig, prefix = ''): string[] => {
     const seen = new Set<string>()
     const dupes = new Set<string>()
+    const nested: string[] = []
     for (const field of config) {
-        if (seen.has(field.name)) dupes.add(field.name)
+        const path = `${prefix}${field.name}`
+        if (seen.has(field.name)) dupes.add(path)
         seen.add(field.name)
+        if (field.type === 'group') nested.push(...duplicateNames(field.fields, `${path}.`))
     }
-    return [...dupes]
+    return [...dupes, ...nested]
 }
 
 // Engine for config-driven forms: derives default values, the ordered field
@@ -74,14 +87,11 @@ export function useFormFromConfig(config: FormConfig) {
         throw new Error(`useFormFromConfig: duplicate field name(s): ${dupes.join(', ')}`)
     }
 
-    const defaultsSig = defaultsSignatureOf(config)
-    const schemaSig = schemaSignatureOf(config)
+    const defaultsSig = JSON.stringify(defaultsInputs(config), encode)
+    const schemaSig = JSON.stringify(schemaInputs(config), encode)
 
     const defaults = useMemo(
-        () =>
-            Object.fromEntries(
-                config.map((f) => [f.name, f.defaultValue ?? emptyValueFor(f.type)]),
-            ),
+        () => defaultsOf(config),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [defaultsSig],
     )

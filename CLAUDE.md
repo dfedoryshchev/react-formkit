@@ -191,6 +191,27 @@ for space should keep what was typed into it:
 Making a hand-written schema conditional is yours to do; the automatic half applies to `showWhen`
 in a config.
 
+## Grouped fields in a config
+
+A `group` entry holds its `fields` as one object value under its `name`, so an address submits as
+`{ address: { city, postcode } }` and its errors land on `address.city`:
+
+```tsx
+{
+    name: 'address',
+    type: 'group',
+    fields: [
+        { name: 'city', type: 'text', label: 'City', validation: ['required'] },
+        { name: 'postcode', type: 'text', label: 'Postcode' },
+    ],
+}
+```
+
+**Give a child its key inside the group, not a dotted path.** `name: 'city'`, not
+`name: 'address.city'`; the group supplies the prefix, and a renderer receives the full path as
+`field.name`. A child's `showWhen.field` names a sibling inside the same group, the same way.
+Names only have to be unique within one group.
+
 ## Repeated fields
 
 `FormFieldArray` repeats its children once per item in an array-valued field. It is a render
@@ -461,8 +482,9 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
 
 ## Current limits, so you do not generate around them
 
-- No nested or grouped fields in a config; object- and array-shaped values cannot be modelled yet.
-  `FormFieldArray` covers the hand-written-schema half of that only.
+- A config `group` has no label, wrapper or layout of its own yet; its children render inline.
+- No repeated fields in a config; array-shaped values cannot be modelled yet. `FormFieldArray`
+  covers the hand-written-schema half of that only.
 - Async and cross-field rules are not part of the config schema; `asyncCheck` and
   `useFormLevelValidators` apply to a hand-written schema only.
 - `required` is not enforced across every field type, and non-required fields are not made optional.

@@ -81,6 +81,10 @@ export function buildSchema(config: FormConfig): ZodType {
     const conditional: ConditionalEntry[] = []
 
     for (const field of config) {
+        if (field.type === 'group') {
+            shape[field.name] = buildSchema(field.fields)
+            continue
+        }
         if (isArrayField(field.type)) {
             // Rules are skipped: every one of them assumes a string or a number.
             shape[field.name] = z.array(z.unknown()).nullish()

@@ -14,8 +14,8 @@ export type ValidationDescriptor =
 
 // A single field, described as data. UI-agnostic on purpose so the same config
 // can later target different renderers / adapters.
-// TODO: nested + array field support (no `fields?: FieldConfig[]` recursion yet,
-// so object- and array-shaped values cannot be modelled).
+// TODO: array field support (no repeated FieldConfig yet, so array-shaped
+// values cannot be modelled).
 export interface FieldConfig {
     name: string
     type: ControlType
@@ -30,4 +30,15 @@ export interface FieldConfig {
     showWhen?: FieldCondition
 }
 
-export type FormConfig = FieldConfig[]
+// Several fields held as one object value under `name`, such as an address or a
+// date range. A child's `name` is its key inside that object, and a child's
+// `showWhen` watches a sibling inside the same group.
+export interface CompositeFieldConfig {
+    name: string
+    type: 'group'
+    fields: FormConfig
+}
+
+export type FormConfigEntry = FieldConfig | CompositeFieldConfig
+
+export type FormConfig = FormConfigEntry[]

@@ -266,6 +266,14 @@ throws on the first render: `useFormFromConfig: duplicate field name(s): <names>
 cannot be a last-wins is that the defaults and the schema would disagree about which field won.
 Anything that starts accepting duplicates needs an answer for both.
 
+**A `group` entry is a value shape, not a control type.** `buildSchema` recurses into it as a
+nested `z.object`, the defaults nest the same way, both signatures recurse, and names are unique per
+level (a duplicate is reported by its path, `address.city`). `ConfigFields` hands each child to its
+renderer with the full path as `field.name` and prefixes a child's `showWhen.field` with the group's
+path, because a child's condition watches a sibling inside the same group - the scope `buildSchema`
+evaluates it in. A group has no renderer and no wrapper of its own yet, so its children render
+inline in config order.
+
 **`nativeRenderers` has one entry, and filling in its `byType` undoes the reason it exists.**
 `Control`'s switch is the single place a control type is mapped to a component. A per-type map in
 `config/` was tried once here and reverted for exactly that reason - it was a second copy of the

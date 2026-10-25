@@ -241,6 +241,28 @@ its values while hidden, which is what you want when a branch is only collapsed 
 Validation of a hand-written schema is yours to make conditional; the automatic half applies to
 `showWhen` in a config.
 
+### Grouped fields
+
+A `group` holds several fields as one object value:
+
+```tsx
+const config: FormConfig = [
+    {
+        name: 'address',
+        type: 'group',
+        fields: [
+            { name: 'city', type: 'text', label: 'City', validation: ['required'] },
+            { name: 'postcode', type: 'text', label: 'Postcode' },
+        ],
+    },
+]
+// submits { address: { city, postcode } }
+```
+
+The schema and the defaults nest the same way, an error lands on the child's own path
+(`address.city`), and groups nest inside groups. A child's `name` only has to be unique inside its
+group, and a child's `showWhen` watches a sibling in the same group.
+
 ### Repeated fields
 
 `FormFieldArray` repeats its children once per item in an array-valued field. It is a render
@@ -418,7 +440,8 @@ Each renderer is exported on its own too (`MantineTextRenderer`, `MantineRadioRe
 - A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a form that is already mounted.
 - Duplicate field names in a config throw rather than resolving to the last one.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
-- No nested / grouped fields in a config; `FormFieldArray` is the hand-written-schema half only.
+- A `group` in a config has no label, wrapper or layout of its own yet; its children render inline.
+- No repeated fields in a config; `FormFieldArray` is the hand-written-schema half only.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
 - The Mantine adapter covers every control type but `phone`, which still renders through the native control.

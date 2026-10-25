@@ -16,7 +16,8 @@ Two ways to build a form, sharing one runtime:
 - **JSX**: `<Form validationSchema={schema}>` with `<FormField name type label />` children.
 - **Config**: a `FormConfig` array plus `useFormFromConfig` and `<ConfigFields />`, which derives
   default values and a Zod schema from the data. `ConfigFields` resolves each field through a
-  renderer registry, so the same config can target components other than the native ones.
+  renderer registry, so the same config can target components other than the native ones. A
+  `{ type: 'group', name, fields }` entry holds its children as one nested object value.
 
 Everything is exported from the package root except the Mantine renderers, which have their own
 entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an optional peer.
@@ -44,8 +45,8 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   presets), `asyncCheck` for debounced remote rules (run by `withAsyncChecks` outside a form) with
   `useIsAsyncValidating` for its pending state, the message map, `useFormLevelValidators` for
   cross-field rules, `useIsFieldRequired`, `useFormConfig`, `ValidationSchemaContext`.
-- [src/config/index.ts](src/config/index.ts): `FormConfig`, `FieldConfig`,
-  `ValidationDescriptor`, `useFormFromConfig`, `buildSchema`, `ConfigFields`, and the renderer
+- [src/config/index.ts](src/config/index.ts): `FormConfig`, `FormConfigEntry`, `FieldConfig`,
+  `CompositeFieldConfig`, `ValidationDescriptor`, `useFormFromConfig`, `buildSchema`, `ConfigFields`, and the renderer
   seam - `FieldRenderProps`, `FieldRenderer`, `FieldRendererRegistry`, `NativeFieldRenderer`,
   `nativeRenderers`, `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`,
   `fieldRenderProps`.
