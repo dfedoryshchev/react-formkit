@@ -29,6 +29,8 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
 - [AGENTS.md](AGENTS.md): how to make changes in this repository - required checks, where each
   kind of change belongs, and the constraints that are not visible from the call site.
 - [CHANGELOG](CHANGELOG.md): released versions.
+- [docs/agent-cost.md](docs/agent-cost.md): what a coding agent cost per run to build two small
+  forms with the installed package, and the defect those runs found.
 
 ## API surface
 
