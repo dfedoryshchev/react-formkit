@@ -1,6 +1,6 @@
 import type { ControlType } from '@/controls/Control'
 import type { Option } from '@/controls/control.types'
-import type { FieldCondition } from '@/field'
+import type { FieldCondition, GroupLayout } from '@/field'
 
 // Validation rules expressed as data; resolved to a zod schema by buildSchema.
 export type ValidationDescriptor =
@@ -32,11 +32,16 @@ export interface FieldConfig {
 
 // Several fields held as one object value under `name`, such as an address or a
 // date range. A child's `name` is its key inside that object, and a child's
-// `showWhen` watches a sibling inside the same group.
+// `showWhen` watches a sibling inside the same group; the group's own
+// `showWhen` watches a sibling of the group.
 export interface CompositeFieldConfig {
     name: string
     type: 'group'
     fields: FormConfig
+    label?: string
+    description?: string
+    layout?: GroupLayout
+    showWhen?: FieldCondition
 }
 
 export type FormConfigEntry = FieldConfig | CompositeFieldConfig

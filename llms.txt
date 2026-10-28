@@ -17,7 +17,9 @@ Two ways to build a form, sharing one runtime:
 - **Config**: a `FormConfig` array plus `useFormFromConfig` and `<ConfigFields />`, which derives
   default values and a Zod schema from the data. `ConfigFields` resolves each field through a
   renderer registry, so the same config can target components other than the native ones. A
-  `{ type: 'group', name, fields }` entry holds its children as one nested object value.
+  `{ type: 'group', name, fields }` entry holds its children as one nested object value and
+  renders as a fieldset, with an optional `label`, `description`, `layout` (`stack` or `row`) and
+  `showWhen`; `CompositeField` is the same wrapper for a JSX form.
 
 Everything is exported from the package root except the Mantine renderers, which have their own
 entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an optional peer.
@@ -39,7 +41,7 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   `BasicForm` (same pipeline, bring your own submit control), `ButtonWithFormLoader`,
   `withSubmitButton`.
 - [src/field/index.ts](src/field/index.ts): `FormField`, `Field`, `FieldMessage`,
-  `ConditionalField`, `matchesCondition`, `FormFieldArray`.
+  `ConditionalField`, `matchesCondition`, `CompositeField`, `FormFieldArray`.
 - [src/controls/index.ts](src/controls/index.ts): `Control` (the type router) and every concrete
   input - text, numeric, textarea, select, checkbox, checkbox-group, radio, switch, password,
   email, url, date, time, datetime, multiselect, autocomplete, multi-autocomplete, phone.
@@ -49,8 +51,9 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   cross-field rules, `useIsFieldRequired`, `useFormConfig`, `ValidationSchemaContext`.
 - [src/config/index.ts](src/config/index.ts): `FormConfig`, `FormConfigEntry`, `FieldConfig`,
   `CompositeFieldConfig`, `ValidationDescriptor`, `useFormFromConfig`, `buildSchema`, `ConfigFields`, and the renderer
-  seam - `FieldRenderProps`, `FieldRenderer`, `FieldRendererRegistry`, `NativeFieldRenderer`,
-  `nativeRenderers`, `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`,
+  seam - `FieldRenderProps`, `FieldRenderer`, `FieldRendererRegistry`, `GroupRenderProps`,
+  `GroupRenderer`, `NativeFieldRenderer`, `NativeGroupRenderer`, `nativeRenderers`,
+  `RendererProvider`, `useFieldRenderers`, `resolveFieldRenderer`, `resolveGroupRenderer`,
   `fieldRenderProps`.
 - [src/adapters/mantine/index.ts](src/adapters/mantine/index.ts): the `@react-formkit/core/mantine` entry
   point - `mantineRenderers` (a registry routing every control type but `phone` to Mantine and
@@ -59,7 +62,8 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   `MantineCheckboxRenderer`, `MantineRadioRenderer`, `MantineEmailRenderer`, `MantineUrlRenderer`,
   `MantineDateRenderer`, `MantineTimeRenderer`, `MantineDateTimeRenderer`,
   `MantineCheckboxGroupRenderer`, `MantineSwitchRenderer`, `MantinePasswordRenderer`,
-  `MantineMultiSelectRenderer`, `MantineAutocompleteRenderer` and `MantineTagsRenderer`.
+  `MantineMultiSelectRenderer`, `MantineAutocompleteRenderer` and `MantineTagsRenderer`, plus
+  `MantineGroupRenderer`, its `group` entry, which renders a config group as a Mantine `Fieldset`.
 
 ## Behaviour worth knowing before generating code
 
@@ -98,7 +102,7 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   leaves it unasked.
 - [src/config/buildSchema.ts](src/config/buildSchema.ts): turns `ValidationDescriptor[]` into a
   Zod schema. An explicit `message` on a descriptor wins; otherwise the message map supplies the
-  default. A `showWhen` field is validated only while its condition holds.
+  default. A `showWhen` field or group is validated only while its condition holds.
 - [src/config/useFormFromConfig.ts](src/config/useFormFromConfig.ts): derives the defaults and the
   schema, **memoised on the config's content, not the array**: the schema on each field's `name`,
   `type`, `validation` and `showWhen`, the defaults on `name`, `type` and `defaultValue`. An inline
@@ -111,7 +115,7 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   letting the last field win in the defaults and the schema separately.
 - [src/config/ConfigFields.tsx](src/config/ConfigFields.tsx): resolves each field to a renderer -
   a component taking `{ field, required }` - and renders that. The registry is `{ fallback,
-  byType? }`, read from `RendererContext` (default `nativeRenderers`) unless the `renderers` prop
+  byType?, group? }`, read from `RendererContext` (default `nativeRenderers`) unless the `renderers` prop
   overrides it for one list. **`showWhen` and the `field.name` key stay outside the renderer**, so
   a custom renderer gets conditional visibility and the required flag without implementing either.
   **A nested provider replaces the registry above it rather than merging.** A renderer that does

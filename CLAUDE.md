@@ -200,6 +200,9 @@ A `group` entry holds its `fields` as one object value under its `name`, so an a
 {
     name: 'address',
     type: 'group',
+    label: 'Address',
+    description: 'Where the order is delivered',
+    layout: 'row',
     fields: [
         { name: 'city', type: 'text', label: 'City', validation: ['required'] },
         { name: 'postcode', type: 'text', label: 'Postcode' },
@@ -211,6 +214,25 @@ A `group` entry holds its `fields` as one object value under its `name`, so an a
 `name: 'address.city'`; the group supplies the prefix, and a renderer receives the full path as
 `field.name`. A child's `showWhen.field` names a sibling inside the same group, the same way.
 Names only have to be unique within one group.
+
+The group renders as a `<fieldset>` with `label` as its legend and `description` as its accessible
+description; `layout` is `'stack'` (default) or `'row'`. A `showWhen` on the group watches a
+sibling **of the group**, and hides, skips validation for and drops the value of the whole group,
+exactly as it does for one field.
+
+For a JSX form, `CompositeField` is the same wrapper. It does not prefix names for you: build each
+child's name from the `name` its render function receives, the way a `FormFieldArray` row does.
+
+```tsx
+<CompositeField name="stay" label="Stay" layout="row">
+    {({ name }) => (
+        <>
+            <FormField name={`${name}.from`} type="date" label="From" />
+            <FormField name={`${name}.to`} type="date" label="To" />
+        </>
+    )}
+</CompositeField>
+```
 
 ## Repeated fields
 
@@ -324,6 +346,11 @@ const renderers: FieldRendererRegistry = {
 Pass `renderers` to `ConfigFields` directly to scope it to one list instead; the prop wins over
 the provider.
 
+A config `group` goes to the registry's `group` entry, a `GroupRenderer` taking
+`{ group, children }`: `group.name` is the full path and `children` are the group's fields, already
+rendered through the same registry, so a group renderer draws the wrapper and places `children`
+inside it. Without a `group` entry the native fieldset (`NativeGroupRenderer`) is used.
+
 **Do not put `showWhen` handling inside a renderer.** `ConfigFields` owns the conditional wrapper,
 so a renderer gets the show and hide, the clear-on-hide and the `required` flag for free. A
 renderer that inspects `field.showWhen` itself ends up with two components deciding one field's
@@ -364,7 +391,8 @@ and submit free text - a string, or an array of tags - so do not expect an optio
 them. The number input submits a number, or `undefined` once emptied. The date, time and datetime
 inputs are the browser's pickers, not `@mantine/dates`, and submit the browser's strings
 (`YYYY-MM-DD`, `HH:MM`, `YYYY-MM-DDTHH:MM`), so do not install `@mantine/dates` or `dayjs` for
-them and do not expect a `Date` in the payload. A field's
+them and do not expect a `Date` in the payload. A config `group` renders as a Mantine `Fieldset`, its
+children in a `Stack`, or a `Group` for `layout: 'row'`. A field's
 `description` lands in each input's Mantine `description` slot and a schema error in its `error`
 slot, both read by the input; put help text there rather than in the `label`. **Import it from
 `@react-formkit/core/mantine`, never from the package root** - the root does not export it, which is
@@ -482,7 +510,6 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
 
 ## Current limits, so you do not generate around them
 
-- A config `group` has no label, wrapper or layout of its own yet; its children render inline.
 - No repeated fields in a config; array-shaped values cannot be modelled yet. `FormFieldArray`
   covers the hand-written-schema half of that only.
 - Async and cross-field rules are not part of the config schema; `asyncCheck` and

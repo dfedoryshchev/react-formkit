@@ -1,6 +1,6 @@
 import React from 'react'
-import { FormField } from '@/field'
-import type { FieldRenderProps, FieldRendererRegistry } from './renderer.types'
+import { CompositeField, FormField } from '@/field'
+import type { FieldRenderProps, FieldRendererRegistry, GroupRenderProps } from './renderer.types'
 
 // The library's own renderer: a config field on the Field/Control stack.
 export const NativeFieldRenderer: React.FC<FieldRenderProps> = ({ field, required }) => (
@@ -14,6 +14,18 @@ export const NativeFieldRenderer: React.FC<FieldRenderProps> = ({ field, require
         disabled={field.disabled}
         required={required}
     />
+)
+
+// The library's own group renderer: a config group as a CompositeField.
+export const NativeGroupRenderer: React.FC<GroupRenderProps> = ({ group, children }) => (
+    <CompositeField
+        name={group.name}
+        label={group.label}
+        description={group.description}
+        layout={group.layout}
+    >
+        {children}
+    </CompositeField>
 )
 
 // One entry on purpose. `Control`'s switch is the only place a control type is

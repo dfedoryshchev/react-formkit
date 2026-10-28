@@ -1,6 +1,12 @@
 import type { ControlType } from '@/controls/Control'
 import type { FieldConfig } from './config.types'
-import type { FieldRenderProps, FieldRenderer, FieldRendererRegistry } from './renderer.types'
+import { NativeGroupRenderer } from './nativeRenderer'
+import type {
+    FieldRenderProps,
+    FieldRenderer,
+    FieldRendererRegistry,
+    GroupRenderer,
+} from './renderer.types'
 
 export const fieldRenderProps = (field: FieldConfig): FieldRenderProps => ({
     field,
@@ -15,3 +21,6 @@ export const resolveFieldRenderer = (
     registry: FieldRendererRegistry,
     type: ControlType,
 ): FieldRenderer => registry.byType?.[type] ?? registry.fallback
+
+export const resolveGroupRenderer = (registry: FieldRendererRegistry): GroupRenderer =>
+    registry.group ?? NativeGroupRenderer

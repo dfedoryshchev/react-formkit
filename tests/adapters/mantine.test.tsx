@@ -19,6 +19,7 @@ import {
     MantineDateRenderer,
     MantineDateTimeRenderer,
     MantineEmailRenderer,
+    MantineGroupRenderer,
     MantineMultiSelectRenderer,
     MantineNumberRenderer,
     MantinePasswordRenderer,
@@ -1323,5 +1324,64 @@ describe('mixed configs', () => {
         await userEvent.click(view.getByLabelText('I have a nickname'))
         expect(view.getByLabelText(/^Nickname/)).toHaveClass('mantine-TextInput-input')
         expect(container.querySelector('.mantine-InputWrapper-required')).not.toBeNull()
+    })
+})
+
+describe('a config group through the Mantine renderer', () => {
+    const config: FormConfig = [
+        {
+            name: 'address',
+            type: 'group',
+            label: 'Address',
+            description: 'Where the order is delivered',
+            fields: [
+                { name: 'city', type: 'text', label: 'City', validation: ['required'] },
+                { name: 'postcode', type: 'text', label: 'Postcode' },
+            ],
+        },
+    ]
+
+    it('is the registry group renderer', () => {
+        expect(MantineGroupRenderer).toBeTypeOf('function')
+        expect(mantineRenderers.group).toBe(MantineGroupRenderer)
+    })
+
+    it('renders a Mantine Fieldset with the label as its legend and the description on it', () => {
+        const { view } = mount(config)
+        const group = view.getByRole('group', { name: 'Address' })
+
+        expect(group).toHaveClass('mantine-Fieldset-root')
+        expect(group).toHaveAccessibleDescription('Where the order is delivered')
+        expect(within(group).getByLabelText(/^City/)).toHaveClass('mantine-TextInput-input')
+        expect(group.querySelector('.mantine-Stack-root')).not.toBeNull()
+    })
+
+    it('lays the children out in a Mantine Group for a row layout', () => {
+        const { view } = mount([
+            {
+                name: 'range',
+                type: 'group',
+                label: 'Dates',
+                layout: 'row',
+                fields: [
+                    { name: 'from', type: 'date', label: 'From' },
+                    { name: 'to', type: 'date', label: 'To' },
+                ],
+            },
+        ])
+        const group = view.getByRole('group', { name: 'Dates' })
+
+        expect(group.querySelector('.mantine-Group-root')).not.toBeNull()
+        expect(group.querySelector('.mantine-Stack-root')).toBeNull()
+    })
+
+    it('submits the group as one nested value', async () => {
+        const { view, onSubmit, submit } = mount(config)
+        await userEvent.type(view.getByLabelText(/^City/), 'Leeds')
+        await userEvent.type(view.getByLabelText('Postcode'), 'LS1')
+        submit()
+
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ address: { city: 'Leeds', postcode: 'LS1' } })
     })
 })

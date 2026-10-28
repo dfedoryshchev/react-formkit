@@ -4,6 +4,7 @@ import { MantineAutocompleteRenderer } from './MantineAutocompleteRenderer'
 import { MantineCheckboxGroupRenderer } from './MantineCheckboxGroupRenderer'
 import { MantineCheckboxRenderer } from './MantineCheckboxRenderer'
 import { MantineDateRenderer } from './MantineDateRenderer'
+import { MantineGroupRenderer } from './MantineGroupRenderer'
 import { MantineMultiSelectRenderer } from './MantineMultiSelectRenderer'
 import { MantineNumberRenderer } from './MantineNumberRenderer'
 import { MantinePasswordRenderer } from './MantinePasswordRenderer'
@@ -27,6 +28,7 @@ export {
     MantineDateRenderer,
     MantineDateTimeRenderer,
     MantineEmailRenderer,
+    MantineGroupRenderer,
     MantineMultiSelectRenderer,
     MantineNumberRenderer,
     MantinePasswordRenderer,
@@ -63,4 +65,5 @@ export const mantineRenderers: FieldRendererRegistry = {
         autocomplete: MantineAutocompleteRenderer,
         'multi-autocomplete': MantineTagsRenderer,
     },
+    group: MantineGroupRenderer,
 }

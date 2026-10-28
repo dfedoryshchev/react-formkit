@@ -250,6 +250,9 @@ const config: FormConfig = [
     {
         name: 'address',
         type: 'group',
+        label: 'Address',
+        description: 'Where the order is delivered',
+        layout: 'row',
         fields: [
             { name: 'city', type: 'text', label: 'City', validation: ['required'] },
             { name: 'postcode', type: 'text', label: 'Postcode' },
@@ -262,6 +265,28 @@ const config: FormConfig = [
 The schema and the defaults nest the same way, an error lands on the child's own path
 (`address.city`), and groups nest inside groups. A child's `name` only has to be unique inside its
 group, and a child's `showWhen` watches a sibling in the same group.
+
+The group renders as a `<fieldset>`: `label` is its legend, `description` sits under the legend
+and describes the fieldset, and `layout` is `'stack'` (the default, one child under another) or
+`'row'` (side by side). A `showWhen` on the group itself watches a sibling of the group and works
+like a field's: the whole group shows and validates only while the condition holds, and its value
+is dropped when it hides.
+
+Without a config, `CompositeField` is the same fieldset. Its children name their own paths, and a
+render function receives the group's `name` to build them from:
+
+```tsx
+<CompositeField name="stay" label="Stay" layout="row">
+    {({ name }) => (
+        <>
+            <FormField name={`${name}.from`} type="date" label="From" />
+            <FormField name={`${name}.to`} type="date" label="To" />
+        </>
+    )}
+</CompositeField>
+```
+
+It only lays the children out; the nested value is whatever the form's schema says about `stay`.
 
 ### Repeated fields
 
@@ -379,6 +404,10 @@ the `required` flag that a conditional field's deliberately lenient schema key c
 A renderer gets the field as the config wrote it. Reading `field.type` is how one component can
 cover several types; anything it does not handle belongs in `byType` under another renderer.
 
+A `group` entry goes to the registry's `group` renderer, a component taking `{ group, children }`
+where `group.name` is the group's full path and `children` are its fields already rendered. A
+registry without `group` renders groups through `NativeGroupRenderer`, the native fieldset.
+
 ### Mantine
 
 `@react-formkit/core/mantine` exports `mantineRenderers`, a registry that renders every control
@@ -400,6 +429,7 @@ Mantine has no phone input:
 | `checkbox-group` | `Checkbox.Group` |
 | `radio` | `Radio.Group` |
 | `switch` | `Switch` |
+| a `group` entry | `Fieldset`, children in a `Stack`, or a `Group` for `layout: 'row'` |
 
 It needs a `MantineProvider` above it, like any Mantine component:
 
@@ -434,13 +464,12 @@ are the browser's own pickers in a Mantine wrapper, so `@mantine/dates` and `day
 needed: they submit the browser's strings (`YYYY-MM-DD`, `HH:MM`, `YYYY-MM-DDTHH:MM`), as the
 native controls do, and `''` while empty.
 Each renderer is exported on its own too (`MantineTextRenderer`, `MantineRadioRenderer`,
-`MantineTagsRenderer` and so on, one per entry in the table), for a registry of your own.
+`MantineGroupRenderer` and so on, one per entry in the table), for a registry of your own.
 
 ### Known limitations
 - A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a form that is already mounted.
 - Duplicate field names in a config throw rather than resolving to the last one.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
-- A `group` in a config has no label, wrapper or layout of its own yet; its children render inline.
 - No repeated fields in a config; `FormFieldArray` is the hand-written-schema half only.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).

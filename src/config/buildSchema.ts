@@ -1,7 +1,7 @@
 import { z, ZodType } from 'zod'
-import { matchesCondition } from '@/field'
+import { matchesCondition, type FieldCondition } from '@/field'
 import { getMessages } from '@/validation/messages'
-import type { FieldConfig, FormConfig, ValidationDescriptor } from './config.types'
+import type { FieldConfig, FormConfig, FormConfigEntry, ValidationDescriptor } from './config.types'
 
 const baseFor = (field: FieldConfig): ZodType => {
     switch (field.type) {
@@ -72,8 +72,21 @@ const enforceRequired = (schema: ZodType): ZodType =>
 // below, because a required field inside a hidden branch would otherwise fail
 // submit with an error the user cannot see or reach.
 interface ConditionalEntry {
-    field: FieldConfig
+    name: string
+    condition: FieldCondition
     schema: ZodType
+}
+
+// The bare base type of every leaf, so a hidden group's leftover value passes
+// whatever its children's rules say.
+const lenientFor = (entry: FormConfigEntry): ZodType => {
+    if (entry.type === 'group') {
+        return z
+            .object(Object.fromEntries(entry.fields.map((f) => [f.name, lenientFor(f)])))
+            .nullish()
+    }
+    if (isArrayField(entry.type)) return z.array(z.unknown()).nullish()
+    return baseFor(entry).nullish()
 }
 
 export function buildSchema(config: FormConfig): ZodType {
@@ -82,7 +95,13 @@ export function buildSchema(config: FormConfig): ZodType {
 
     for (const field of config) {
         if (field.type === 'group') {
-            shape[field.name] = buildSchema(field.fields)
+            const nested = buildSchema(field.fields)
+            if (field.showWhen) {
+                shape[field.name] = lenientFor(field)
+                conditional.push({ name: field.name, condition: field.showWhen, schema: nested })
+                continue
+            }
+            shape[field.name] = nested
             continue
         }
         if (isArrayField(field.type)) {
@@ -104,8 +123,8 @@ export function buildSchema(config: FormConfig): ZodType {
             // Lenient key = the bare base type, not `enforced` and not `s`:
             // rules like minLength would otherwise still reject the leftover
             // value of a hidden field.
-            shape[field.name] = baseFor(field).nullish()
-            conditional.push({ field, schema: enforced })
+            shape[field.name] = lenientFor(field)
+            conditional.push({ name: field.name, condition: field.showWhen, schema: enforced })
             continue
         }
         shape[field.name] = enforced
@@ -115,17 +134,16 @@ export function buildSchema(config: FormConfig): ZodType {
     if (conditional.length === 0) return object
 
     return object.superRefine((values, ctx) => {
-        for (const { field, schema } of conditional) {
-            const condition = field.showWhen as NonNullable<FieldConfig['showWhen']>
+        for (const { name, condition, schema } of conditional) {
             const watched = (values as Record<string, unknown>)[condition.field]
             if (!matchesCondition(watched, condition)) continue
 
-            const result = schema.safeParse((values as Record<string, unknown>)[field.name])
+            const result = schema.safeParse((values as Record<string, unknown>)[name])
             if (result.success) continue
             for (const issue of result.error.issues) {
                 // Re-anchor onto the field's own path so the message lands on
                 // the input rather than at the form root.
-                ctx.addIssue({ ...issue, path: [field.name, ...issue.path] })
+                ctx.addIssue({ ...issue, path: [name, ...issue.path] })
             }
         }
     })

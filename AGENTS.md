@@ -271,8 +271,19 @@ nested `z.object`, the defaults nest the same way, both signatures recurse, and 
 level (a duplicate is reported by its path, `address.city`). `ConfigFields` hands each child to its
 renderer with the full path as `field.name` and prefixes a child's `showWhen.field` with the group's
 path, because a child's condition watches a sibling inside the same group - the scope `buildSchema`
-evaluates it in. A group has no renderer and no wrapper of its own yet, so its children render
-inline in config order.
+evaluates it in. The group itself goes through the registry's `group` renderer
+(`resolveGroupRenderer`, `NativeGroupRenderer` when a registry names none), which receives the
+group with its full path as `name` and its children already rendered; the renderer draws the
+wrapper only and never resolves a child itself.
+
+**A group's own `showWhen` is applied like a field's, one level up.** It watches a sibling of the
+group, `ConfigFields` wraps the group renderer in `ConditionalField` and clears the whole group
+path on hide, and `buildSchema` gives the group key a lenient shape (`lenientFor`: every leaf its
+bare base type, nullish) and validates the real nested schema in the root refinement. Because that
+key is lenient, the schema can no longer say which child of a conditional group is required, so
+`ConfigFields` sets `required` from each child's config for everything below a conditional group;
+dropping that puts every required marker inside such a group to sleep. The group's `showWhen` is in
+the schema signature with its children.
 
 **`nativeRenderers` has one entry, and filling in its `byType` undoes the reason it exists.**
 `Control`'s switch is the single place a control type is mapped to a component. A per-type map in

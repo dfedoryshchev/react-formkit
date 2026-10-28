@@ -45,7 +45,7 @@ const encode = (_key: string, value: unknown): unknown => {
 const schemaInputs = (config: FormConfig): unknown[] =>
     config.map((f) =>
         f.type === 'group'
-            ? [f.name, f.type, schemaInputs(f.fields)]
+            ? [f.name, f.type, f.showWhen, schemaInputs(f.fields)]
             : [f.name, f.type, f.validation, f.showWhen],
     )
 

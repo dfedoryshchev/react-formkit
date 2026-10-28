@@ -1,8 +1,9 @@
 import React from 'react'
 import { z } from 'zod'
 import { Form, BasicForm } from '../src/form'
-import { FormField } from '../src/field'
+import { CompositeField, FormField } from '../src/field'
 import { useFormFromConfig, ConfigFields, FormConfig } from '../src/config'
+import { required } from '../src/validation'
 
 const schema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -84,6 +85,78 @@ const signupConfig: FormConfig = [
     },
     { name: 'subscribe', type: 'checkbox', label: 'Subscribe to updates' },
 ]
+
+const bookingConfig: FormConfig = [
+    { name: 'guest', type: 'text', label: 'Guest name', validation: ['required'] },
+    {
+        name: 'stay',
+        type: 'group',
+        label: 'Stay',
+        description: 'Arrival and departure dates',
+        layout: 'row',
+        fields: [
+            { name: 'from', type: 'date', label: 'From', validation: ['required'] },
+            { name: 'to', type: 'date', label: 'To', validation: ['required'] },
+        ],
+    },
+    { name: 'invoiceElsewhere', type: 'checkbox', label: 'Send the invoice to another address' },
+    {
+        name: 'billing',
+        type: 'group',
+        label: 'Billing address',
+        showWhen: { field: 'invoiceElsewhere', is: true },
+        fields: [
+            { name: 'street', type: 'text', label: 'Street', validation: ['required'] },
+            { name: 'city', type: 'text', label: 'City', validation: ['required'] },
+            { name: 'postcode', type: 'text', label: 'Postcode' },
+        ],
+    },
+]
+
+function CompositeConfigDemo() {
+    const { defaults, fields, schema } = useFormFromConfig(bookingConfig)
+    return (
+        <BasicForm
+            defaultValues={defaults}
+            validationSchema={schema}
+            onSubmit={(data) => alert(JSON.stringify(data, null, 2))}
+        >
+            <ConfigFields config={fields} />
+            <button type="submit" style={{ marginTop: 16, padding: '8px 20px', fontSize: 14 }}>
+                Book
+            </button>
+        </BasicForm>
+    )
+}
+
+const contactSchema = z.object({
+    contact: z.object({
+        firstName: required(),
+        lastName: required(),
+    }),
+})
+
+function CompositeJsxDemo() {
+    return (
+        <BasicForm
+            validationSchema={contactSchema}
+            defaultValues={{ contact: { firstName: '', lastName: '' } }}
+            onSubmit={(data) => alert(JSON.stringify(data, null, 2))}
+        >
+            <CompositeField name="contact" label="Full name" layout="row">
+                {({ name }) => (
+                    <>
+                        <FormField name={`${name}.firstName`} type="text" label="First" />
+                        <FormField name={`${name}.lastName`} type="text" label="Last" />
+                    </>
+                )}
+            </CompositeField>
+            <button type="submit" style={{ marginTop: 16, padding: '8px 20px', fontSize: 14 }}>
+                Save
+            </button>
+        </BasicForm>
+    )
+}
 
 function ConfigDrivenDemo() {
     const { defaults, fields, schema } = useFormFromConfig(signupConfig)
@@ -234,6 +307,16 @@ const App = () => {
                 Rendered entirely from a FormConfig array via useFormFromConfig + ConfigFields.
             </p>
             <ConfigDrivenDemo />
+
+            <h2 style={{ marginTop: 48 }}>Composite fields</h2>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+                Config groups submit one nested value each; the billing group shows only while its
+                checkbox is ticked.
+            </p>
+            <CompositeConfigDemo />
+
+            <h3 style={{ marginTop: 32 }}>Without a config</h3>
+            <CompositeJsxDemo />
         </div>
     )
 }
