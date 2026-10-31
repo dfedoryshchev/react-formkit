@@ -129,6 +129,53 @@ function CompositeConfigDemo() {
     )
 }
 
+const orderConfig: FormConfig = [
+    { name: 'customer', type: 'text', label: 'Customer', validation: ['required'] },
+    {
+        name: 'lines',
+        type: 'array',
+        label: 'Order lines',
+        description: 'One line per product',
+        itemLabel: 'Line',
+        addLabel: 'Add line',
+        layout: 'row',
+        defaultValue: [{ product: 'Notebook', quantity: 2 }],
+        fields: [
+            { name: 'product', type: 'text', label: 'Product', validation: ['required'] },
+            {
+                name: 'quantity',
+                type: 'numeric',
+                label: 'Quantity',
+                validation: [{ rule: 'min', value: 1 }],
+            },
+            { name: 'gift', type: 'checkbox', label: 'Gift' },
+            {
+                name: 'note',
+                type: 'text',
+                label: 'Gift note',
+                validation: ['required'],
+                showWhen: { field: 'gift', is: true },
+            },
+        ],
+    },
+]
+
+function ArrayConfigDemo() {
+    const { defaults, fields, schema } = useFormFromConfig(orderConfig)
+    return (
+        <BasicForm
+            defaultValues={defaults}
+            validationSchema={schema}
+            onSubmit={(data) => alert(JSON.stringify(data, null, 2))}
+        >
+            <ConfigFields config={fields} />
+            <button type="submit" style={{ marginTop: 16, padding: '8px 20px', fontSize: 14 }}>
+                Place order
+            </button>
+        </BasicForm>
+    )
+}
+
 const contactSchema = z.object({
     contact: z.object({
         firstName: required(),
@@ -317,6 +364,13 @@ const App = () => {
 
             <h3 style={{ marginTop: 32 }}>Without a config</h3>
             <CompositeJsxDemo />
+
+            <h2 style={{ marginTop: 48 }}>Repeated fields</h2>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+                A config array submits one object per item; each item validates on its own and shows
+                its note only while its gift box is ticked.
+            </p>
+            <ArrayConfigDemo />
         </div>
     )
 }

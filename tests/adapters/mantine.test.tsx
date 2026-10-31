@@ -13,6 +13,8 @@ import {
 } from '../../src/config'
 import type { FormConfig } from '../../src/config'
 import {
+    MantineArrayItemRenderer,
+    MantineArrayRenderer,
     MantineAutocompleteRenderer,
     MantineCheckboxGroupRenderer,
     MantineCheckboxRenderer,
@@ -1383,5 +1385,68 @@ describe('a config group through the Mantine renderer', () => {
 
         await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
         expect(onSubmit.mock.calls[0][0]).toEqual({ address: { city: 'Leeds', postcode: 'LS1' } })
+    })
+})
+
+describe('a config array through the Mantine renderers', () => {
+    const config: FormConfig = [
+        {
+            name: 'contacts',
+            type: 'array',
+            label: 'Contacts',
+            description: 'Who to reach',
+            itemLabel: 'Contact',
+            addLabel: 'Add contact',
+            layout: 'row',
+            defaultValue: [{ name: 'Ada' }],
+            fields: [
+                { name: 'name', type: 'text', label: 'Name', validation: ['required'] },
+                { name: 'phone', type: 'text', label: 'Phone' },
+            ],
+        },
+    ]
+
+    it('is the registry array and array item renderer', () => {
+        expect(MantineArrayRenderer).toBeTypeOf('function')
+        expect(MantineArrayItemRenderer).toBeTypeOf('function')
+        expect(mantineRenderers.array).toBe(MantineArrayRenderer)
+        expect(mantineRenderers.arrayItem).toBe(MantineArrayItemRenderer)
+    })
+
+    it('renders the list and each item as a Mantine Fieldset with Mantine buttons', () => {
+        const { view } = mount(config)
+        const list = view.getByRole('group', { name: 'Contacts' })
+
+        expect(list).toHaveClass('mantine-Fieldset-root')
+        expect(list).toHaveAccessibleDescription('Who to reach')
+        const item = within(list).getByRole('group', { name: 'Contact 1' })
+        expect(item).toHaveClass('mantine-Fieldset-root')
+        expect(item.querySelector('.mantine-Group-root')).not.toBeNull()
+        expect(within(item).getByLabelText(/^Name/)).toHaveClass('mantine-TextInput-input')
+        expect(within(item).getByRole('button', { name: 'Remove' })).toHaveClass(
+            'mantine-Button-root',
+        )
+        expect(within(list).getByRole('button', { name: 'Add contact' })).toHaveAttribute(
+            'type',
+            'button',
+        )
+    })
+
+    it('adds and removes items and submits them as an array', async () => {
+        const { view, onSubmit, submit } = mount(config)
+        await userEvent.click(view.getByRole('button', { name: 'Add contact' }))
+        const second = await view.findByRole('group', { name: 'Contact 2' })
+        await userEvent.type(within(second).getByLabelText(/^Name/), 'Grace')
+
+        await userEvent.click(
+            within(view.getByRole('group', { name: 'Contact 1' })).getByRole('button', {
+                name: 'Remove',
+            }),
+        )
+        await waitFor(() => expect(view.queryByRole('group', { name: 'Contact 2' })).toBeNull())
+        submit()
+
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        expect(onSubmit.mock.calls[0][0]).toEqual({ contacts: [{ name: 'Grace', phone: '' }] })
     })
 })

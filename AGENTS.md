@@ -249,7 +249,8 @@ purpose.
 
 **The config memo is keyed on content, and each signature covers exactly what its value reads.**
 `useFormFromConfig` serialises `name`, `type`, `validation` and `showWhen` per field for the
-schema, and `name`, `type` and `defaultValue` for the defaults. An inline array literal costs one
+schema, and `name`, `type` and `defaultValue` for the defaults (a group or an array adds its
+children to both). An inline array literal costs one
 serialisation per render and no rebuild. A RegExp is written as its source and flags, a function
 as an identity id, because `JSON.stringify` would otherwise drop both and the memo would go stale
 again. Anything `buildSchema` starts reading has to join the schema signature in the same change;
@@ -284,6 +285,20 @@ key is lenient, the schema can no longer say which child of a conditional group 
 `ConfigFields` sets `required` from each child's config for everything below a conditional group;
 dropping that puts every required marker inside such a group to sleep. The group's `showWhen` is in
 the schema signature with its children.
+
+**An `array` entry is a group repeated per item.** `buildSchema` builds the item fields exactly as
+it builds a group and wraps the result in `z.array`, so a child's `showWhen` is evaluated inside its
+own item and an error lands on `contacts.1.email`. Its `showWhen` takes the group path above: a
+lenient key (`z.array(z.unknown()).nullish()`), the real schema in the root refinement, and
+`required` from the config for every field below it. `ConfigFields` renders it through
+`useFieldArrayRows`, the hook `FormFieldArray` is built on, so a config array and a hand-written one
+share the same row keys, row paths and refused out-of-range moves. The registry's `array` renderer
+draws the list and its add control, the `arrayItem` renderer draws one item around its
+already-rendered fields with the row's `remove` and moves; `NativeArrayRenderer` and
+`NativeArrayItemRenderer` stand in when a registry names neither. Unlike `FormFieldArray`, the config
+side knows the element shape, so `append` seeds a new item from the item fields' defaults, and a
+`defaultValue` item that leaves a field out gets that field's default too - which is why the defaults
+signature of an array covers its item fields as well as its own `defaultValue`.
 
 **`nativeRenderers` has one entry, and filling in its `byType` undoes the reason it exists.**
 `Control`'s switch is the single place a control type is mapped to a component. A per-type map in

@@ -340,7 +340,32 @@ state as well, because an add control that appears only once a row exists leaves
 with no way back. A move past either end is refused rather than passed on. `append` takes the
 value a new row starts as - the component never sees the element schema, so it cannot invent one.
 
-Array shapes are a hand-written-schema feature: a config cannot express a repeated field yet.
+In a config, an `array` entry is the same thing described as data - a group repeated once per
+item:
+
+```tsx
+const config: FormConfig = [
+    {
+        name: 'contacts',
+        type: 'array',
+        label: 'Contacts',
+        itemLabel: 'Contact',
+        addLabel: 'Add contact',
+        fields: [
+            { name: 'name', type: 'text', label: 'Name', validation: ['required'] },
+            { name: 'email', type: 'email', label: 'Email' },
+        ],
+    },
+]
+```
+
+It submits `{ contacts: [{ name, email }, ...] }` and validates every item against its `fields`,
+with an error on the item's own path (`contacts.1.name`). Each item renders as a fieldset named
+`Contact 1`, `Contact 2` and so on, with a remove button, and the list ends in an add button. The
+config knows the item shape, so a new item starts from each field's default, and so does any field
+a `defaultValue` item leaves out. A child's `showWhen` watches a sibling inside its own item; the
+entry's own `showWhen` hides, skips and drops the whole array. `layout` lays out one item's fields,
+and `addLabel` / `removeLabel` default to `Add` and `Remove`.
 
 ### Choosing how a field renders
 
@@ -408,6 +433,12 @@ A `group` entry goes to the registry's `group` renderer, a component taking `{ g
 where `group.name` is the group's full path and `children` are its fields already rendered. A
 registry without `group` renders groups through `NativeGroupRenderer`, the native fieldset.
 
+An `array` entry goes to two: `array`, taking `{ array, children, append, count }`, draws the list
+around its rendered items and the add control, and `arrayItem`, taking `{ array, item, children }`,
+draws one item, where `item` is the same row `FormFieldArray` hands you (`name`, `index`, `remove`,
+`moveUp`, `moveDown`, `isFirst`, `isLast`). `NativeArrayRenderer` and `NativeArrayItemRenderer`
+cover whichever a registry leaves out.
+
 ### Mantine
 
 `@react-formkit/core/mantine` exports `mantineRenderers`, a registry that renders every control
@@ -430,6 +461,7 @@ Mantine has no phone input:
 | `radio` | `Radio.Group` |
 | `switch` | `Switch` |
 | a `group` entry | `Fieldset`, children in a `Stack`, or a `Group` for `layout: 'row'` |
+| an `array` entry | a `Fieldset` of item `Fieldset`s, `Button`s to add and remove |
 
 It needs a `MantineProvider` above it, like any Mantine component:
 
@@ -464,13 +496,14 @@ are the browser's own pickers in a Mantine wrapper, so `@mantine/dates` and `day
 needed: they submit the browser's strings (`YYYY-MM-DD`, `HH:MM`, `YYYY-MM-DDTHH:MM`), as the
 native controls do, and `''` while empty.
 Each renderer is exported on its own too (`MantineTextRenderer`, `MantineRadioRenderer`,
-`MantineGroupRenderer` and so on, one per entry in the table), for a registry of your own.
+`MantineGroupRenderer`, `MantineArrayRenderer`, `MantineArrayItemRenderer` and so on, one per
+entry in the table), for a registry of your own.
 
 ### Known limitations
 - A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a form that is already mounted.
 - Duplicate field names in a config throw rather than resolving to the last one.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
-- No repeated fields in a config; `FormFieldArray` is the hand-written-schema half only.
+- A config `array` takes no rules of its own, so a minimum or maximum item count needs a hand-written schema.
 - A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
 - The Mantine adapter covers every control type but `phone`, which still renders through the native control.

@@ -14,8 +14,6 @@ export type ValidationDescriptor =
 
 // A single field, described as data. UI-agnostic on purpose so the same config
 // can later target different renderers / adapters.
-// TODO: array field support (no repeated FieldConfig yet, so array-shaped
-// values cannot be modelled).
 export interface FieldConfig {
     name: string
     type: ControlType
@@ -44,6 +42,28 @@ export interface CompositeFieldConfig {
     showWhen?: FieldCondition
 }
 
-export type FormConfigEntry = FieldConfig | CompositeFieldConfig
+// A list of items that each hold the same `fields`, submitted as an array of
+// objects under `name`, such as a list of contacts. Inside an item, a child's
+// `name` is its key in that item and a child's `showWhen` watches a sibling in
+// the same item; the array's own `showWhen` watches a sibling of the array.
+export interface FieldArrayConfig {
+    name: string
+    type: 'array'
+    fields: FormConfig
+    label?: string
+    description?: string
+    // Each item's legend is this followed by its position, `Contact 1`.
+    itemLabel?: string
+    // How the fields inside one item are laid out.
+    layout?: GroupLayout
+    // The starting items. An item that leaves a field out gets that field's
+    // own default.
+    defaultValue?: Record<string, unknown>[]
+    addLabel?: string
+    removeLabel?: string
+    showWhen?: FieldCondition
+}
+
+export type FormConfigEntry = FieldConfig | CompositeFieldConfig | FieldArrayConfig
 
 export type FormConfig = FormConfigEntry[]

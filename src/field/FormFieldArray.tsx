@@ -45,6 +45,37 @@ export interface FormFieldArrayProps {
     actions?: (actions: FieldArrayActions) => React.ReactNode
 }
 
+export const useFieldArrayRows = (
+    name: string,
+): { rows: FieldArrayRow[]; append: (value: unknown) => void } => {
+    const { control } = useFormContext()
+    const { fields, append, remove, move } = useFieldArray({ control, name })
+    const last = fields.length - 1
+
+    return {
+        rows: fields.map((field, index) => ({
+            name: `${name}.${index}`,
+            index,
+            id: field.id,
+            remove: () => remove(index),
+            // Both ends are refused here rather than left to the caller to
+            // disable. react-hook-form reorders by splicing, so a target of -1
+            // puts the row back in before the last one and a target past the
+            // end leaves an undefined hole behind it - two silent corruptions
+            // that a forgotten `disabled` attribute would buy.
+            moveUp: () => {
+                if (index > 0) move(index, index - 1)
+            },
+            moveDown: () => {
+                if (index < last) move(index, index + 1)
+            },
+            isFirst: index === 0,
+            isLast: index === last,
+        })),
+        append: (value) => append(value as never),
+    }
+}
+
 // Repeats its children once per item in an array-valued field, and hands each
 // row the controls that edit the array around it. The component supplies the
 // behaviour, never the markup: what an add or a remove button looks like is the
@@ -59,12 +90,11 @@ export const FormFieldArray: React.FC<FormFieldArrayProps> = ({
     empty,
     actions,
 }) => {
-    const { control } = useFormContext()
-    const { fields, append, remove, move } = useFieldArray({ control, name })
+    const { rows, append } = useFieldArrayRows(name)
 
-    const rendered = actions?.({ append: (value) => append(value as never), count: fields.length })
+    const rendered = actions?.({ append, count: rows.length })
 
-    if (fields.length === 0)
+    if (rows.length === 0)
         return (
             <>
                 {empty ?? null}
@@ -72,33 +102,10 @@ export const FormFieldArray: React.FC<FormFieldArrayProps> = ({
             </>
         )
 
-    const last = fields.length - 1
-
     return (
         <>
-            {fields.map((field, index) => (
-                <React.Fragment key={field.id}>
-                    {children({
-                        name: `${name}.${index}`,
-                        index,
-                        id: field.id,
-                        remove: () => remove(index),
-                        // Both ends are refused here rather than left to the
-                        // caller to disable. react-hook-form reorders by
-                        // splicing, so a target of -1 puts the row back in
-                        // before the last one and a target past the end leaves
-                        // an undefined hole behind it - two silent corruptions
-                        // that a forgotten `disabled` attribute would buy.
-                        moveUp: () => {
-                            if (index > 0) move(index, index - 1)
-                        },
-                        moveDown: () => {
-                            if (index < last) move(index, index + 1)
-                        },
-                        isFirst: index === 0,
-                        isLast: index === last,
-                    })}
-                </React.Fragment>
+            {rows.map((row) => (
+                <React.Fragment key={row.id}>{children(row)}</React.Fragment>
             ))}
             {rendered}
         </>

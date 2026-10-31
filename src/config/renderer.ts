@@ -1,7 +1,9 @@
 import type { ControlType } from '@/controls/Control'
 import type { FieldConfig } from './config.types'
-import { NativeGroupRenderer } from './nativeRenderer'
+import { NativeArrayItemRenderer, NativeArrayRenderer, NativeGroupRenderer } from './nativeRenderer'
 import type {
+    ArrayItemRenderer,
+    ArrayRenderer,
     FieldRenderProps,
     FieldRenderer,
     FieldRendererRegistry,
@@ -24,3 +26,9 @@ export const resolveFieldRenderer = (
 
 export const resolveGroupRenderer = (registry: FieldRendererRegistry): GroupRenderer =>
     registry.group ?? NativeGroupRenderer
+
+export const resolveArrayRenderer = (registry: FieldRendererRegistry): ArrayRenderer =>
+    registry.array ?? NativeArrayRenderer
+
+export const resolveArrayItemRenderer = (registry: FieldRendererRegistry): ArrayItemRenderer =>
+    registry.arrayItem ?? NativeArrayItemRenderer

@@ -301,8 +301,37 @@ control that appears only once a row exists leaves an emptied array with no way 
 A move past either end is refused rather than passed to react-hook-form, so `disabled` on those
 buttons is presentation and not the guard.
 
-One thing it deliberately does not do: **no config support.** A repeated field cannot be expressed
-in a `FormConfig` yet, so this is the hand-written-schema entry point only.
+### Repeated fields in a config
+
+An `array` entry is a group repeated once per item, submitted as an array of objects under its
+`name`. Do not reach for `FormFieldArray` inside a config form; the entry is the config spelling of
+it:
+
+```tsx
+{
+    name: 'contacts',
+    type: 'array',
+    label: 'Contacts',
+    itemLabel: 'Contact',
+    addLabel: 'Add contact',
+    defaultValue: [{ name: 'Ada' }],
+    fields: [
+        { name: 'name', type: 'text', label: 'Name', validation: ['required'] },
+        { name: 'email', type: 'email', label: 'Email' },
+    ],
+}
+```
+
+It submits `{ contacts: [{ name, email }, ...] }`, and an error lands on the item's own path,
+`contacts.1.name`. Children follow the group rules: a key inside the item, not a dotted path, and a
+child's `showWhen` watches a sibling in the same item. The entry's own `showWhen` hides, skips and
+drops the whole array.
+
+**The add control appends a blank item for you.** Unlike `FormFieldArray`, the config knows the item
+shape, so a new item starts from each item field's default, and a `defaultValue` item that leaves a
+field out gets that field's default too. `itemLabel` names each item's fieldset with its position
+(`Contact 1`); `layout` lays out the fields inside one item; `addLabel` and `removeLabel` default to
+`Add` and `Remove`.
 
 `useIsAsyncValidating` resolves a row's path, so a row whose element schema carries an `asyncCheck`
 gets its own pending indicator: call it with the row's own field name, built from `row.name` the
@@ -351,6 +380,13 @@ A config `group` goes to the registry's `group` entry, a `GroupRenderer` taking
 rendered through the same registry, so a group renderer draws the wrapper and places `children`
 inside it. Without a `group` entry the native fieldset (`NativeGroupRenderer`) is used.
 
+A config `array` goes to two entries. `array`, an `ArrayRenderer` taking
+`{ array, children, append, count }`, draws the list: `children` are the items already rendered and
+`append` adds a seeded item. `arrayItem`, an `ArrayItemRenderer` taking `{ array, item, children }`,
+draws one item: `item` is the row (`name`, `index`, `remove`, `moveUp`, `moveDown`, `isFirst`,
+`isLast`) and `children` its fields. Give every control either renders `type="button"`, for the
+reason above. Without them `NativeArrayRenderer` and `NativeArrayItemRenderer` are used.
+
 **Do not put `showWhen` handling inside a renderer.** `ConfigFields` owns the conditional wrapper,
 so a renderer gets the show and hide, the clear-on-hide and the `required` flag for free. A
 renderer that inspects `field.showWhen` itself ends up with two components deciding one field's
@@ -392,7 +428,8 @@ them. The number input submits a number, or `undefined` once emptied. The date, 
 inputs are the browser's pickers, not `@mantine/dates`, and submit the browser's strings
 (`YYYY-MM-DD`, `HH:MM`, `YYYY-MM-DDTHH:MM`), so do not install `@mantine/dates` or `dayjs` for
 them and do not expect a `Date` in the payload. A config `group` renders as a Mantine `Fieldset`, its
-children in a `Stack`, or a `Group` for `layout: 'row'`. A field's
+children in a `Stack`, or a `Group` for `layout: 'row'`; a config `array` is a `Fieldset` of item
+`Fieldset`s with Mantine `Button`s to add and remove. A field's
 `description` lands in each input's Mantine `description` slot and a schema error in its `error`
 slot, both read by the input; put help text there rather than in the `label`. **Import it from
 `@react-formkit/core/mantine`, never from the package root** - the root does not export it, which is
@@ -510,8 +547,8 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
 
 ## Current limits, so you do not generate around them
 
-- No repeated fields in a config; array-shaped values cannot be modelled yet. `FormFieldArray`
-  covers the hand-written-schema half of that only.
+- A config `array` takes no rules of its own, so a minimum or maximum item count is a
+  hand-written-schema job.
 - Async and cross-field rules are not part of the config schema; `asyncCheck` and
   `useFormLevelValidators` apply to a hand-written schema only.
 - `required` is not enforced across every field type, and non-required fields are not made optional.

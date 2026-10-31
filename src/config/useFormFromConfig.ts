@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { FormConfig, FieldConfig } from './config.types'
+import type { FormConfig, FormConfigEntry, FieldConfig } from './config.types'
 import { buildSchema } from './buildSchema'
 
 const emptyValueFor = (type: FieldConfig['type']): unknown => {
@@ -44,25 +44,28 @@ const encode = (_key: string, value: unknown): unknown => {
 
 const schemaInputs = (config: FormConfig): unknown[] =>
     config.map((f) =>
-        f.type === 'group'
+        f.type === 'group' || f.type === 'array'
             ? [f.name, f.type, f.showWhen, schemaInputs(f.fields)]
             : [f.name, f.type, f.validation, f.showWhen],
     )
 
 const defaultsInputs = (config: FormConfig): unknown[] =>
-    config.map((f) =>
-        f.type === 'group'
-            ? [f.name, f.type, defaultsInputs(f.fields)]
-            : [f.name, f.type, f.defaultValue],
-    )
+    config.map((f) => {
+        if (f.type === 'group') return [f.name, f.type, defaultsInputs(f.fields)]
+        if (f.type === 'array') return [f.name, f.type, f.defaultValue, defaultsInputs(f.fields)]
+        return [f.name, f.type, f.defaultValue]
+    })
 
-const defaultsOf = (config: FormConfig): Record<string, unknown> =>
-    Object.fromEntries(
-        config.map((f) => [
-            f.name,
-            f.type === 'group' ? defaultsOf(f.fields) : (f.defaultValue ?? emptyValueFor(f.type)),
-        ]),
-    )
+const defaultOf = (entry: FormConfigEntry): unknown => {
+    if (entry.type === 'group') return defaultsOf(entry.fields)
+    if (entry.type === 'array') {
+        return (entry.defaultValue ?? []).map((item) => ({ ...defaultsOf(entry.fields), ...item }))
+    }
+    return entry.defaultValue ?? emptyValueFor(entry.type)
+}
+
+export const defaultsOf = (config: FormConfig): Record<string, unknown> =>
+    Object.fromEntries(config.map((f) => [f.name, defaultOf(f)]))
 
 const duplicateNames = (config: FormConfig, prefix = ''): string[] => {
     const seen = new Set<string>()
@@ -72,7 +75,8 @@ const duplicateNames = (config: FormConfig, prefix = ''): string[] => {
         const path = `${prefix}${field.name}`
         if (seen.has(field.name)) dupes.add(path)
         seen.add(field.name)
-        if (field.type === 'group') nested.push(...duplicateNames(field.fields, `${path}.`))
+        if (field.type === 'group' || field.type === 'array')
+            nested.push(...duplicateNames(field.fields, `${path}.`))
     }
     return [...dupes, ...nested]
 }

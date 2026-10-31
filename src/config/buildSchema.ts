@@ -85,7 +85,7 @@ const lenientFor = (entry: FormConfigEntry): ZodType => {
             .object(Object.fromEntries(entry.fields.map((f) => [f.name, lenientFor(f)])))
             .nullish()
     }
-    if (isArrayField(entry.type)) return z.array(z.unknown()).nullish()
+    if (entry.type === 'array' || isArrayField(entry.type)) return z.array(z.unknown()).nullish()
     return baseFor(entry).nullish()
 }
 
@@ -94,8 +94,9 @@ export function buildSchema(config: FormConfig): ZodType {
     const conditional: ConditionalEntry[] = []
 
     for (const field of config) {
-        if (field.type === 'group') {
-            const nested = buildSchema(field.fields)
+        if (field.type === 'group' || field.type === 'array') {
+            const item = buildSchema(field.fields)
+            const nested = field.type === 'array' ? z.array(item) : item
             if (field.showWhen) {
                 shape[field.name] = lenientFor(field)
                 conditional.push({ name: field.name, condition: field.showWhen, schema: nested })

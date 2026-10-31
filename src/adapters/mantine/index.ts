@@ -1,5 +1,6 @@
 import { NativeFieldRenderer } from '@/config/nativeRenderer'
 import type { FieldRendererRegistry } from '@/config/renderer.types'
+import { MantineArrayItemRenderer, MantineArrayRenderer } from './MantineArrayRenderer'
 import { MantineAutocompleteRenderer } from './MantineAutocompleteRenderer'
 import { MantineCheckboxGroupRenderer } from './MantineCheckboxGroupRenderer'
 import { MantineCheckboxRenderer } from './MantineCheckboxRenderer'
@@ -22,6 +23,8 @@ import {
 } from './MantineTypedInputRenderers'
 
 export {
+    MantineArrayItemRenderer,
+    MantineArrayRenderer,
     MantineAutocompleteRenderer,
     MantineCheckboxGroupRenderer,
     MantineCheckboxRenderer,
@@ -66,4 +69,6 @@ export const mantineRenderers: FieldRendererRegistry = {
         'multi-autocomplete': MantineTagsRenderer,
     },
     group: MantineGroupRenderer,
+    array: MantineArrayRenderer,
+    arrayItem: MantineArrayItemRenderer,
 }
