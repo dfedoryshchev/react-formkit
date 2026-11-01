@@ -4,6 +4,7 @@ import { Form, BasicForm } from '../src/form'
 import { CompositeField, FormField } from '../src/field'
 import { useFormFromConfig, ConfigFields, FormConfig } from '../src/config'
 import { required } from '../src/validation'
+import { FormFromPrompt } from '../examples/form-from-prompt/FormFromPrompt'
 
 const schema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -371,6 +372,14 @@ const App = () => {
                 its note only while its gift box is ticked.
             </p>
             <ArrayConfigDemo />
+
+            <h2 style={{ marginTop: 48 }}>Form from JSON</h2>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+                A plain JSON file, the shape a model could be asked to return, rendered and
+                validated as it is: a company group that shows only while its checkbox is ticked,
+                and a list of attendees.
+            </p>
+            <FormFromPrompt />
         </div>
     )
 }

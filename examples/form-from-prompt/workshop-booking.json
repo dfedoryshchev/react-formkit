@@ -1,0 +1,54 @@
+[
+    {
+        "name": "fullName",
+        "type": "text",
+        "label": "Your name",
+        "validation": ["required", { "rule": "minLength", "value": 2 }]
+    },
+    {
+        "name": "email",
+        "type": "email",
+        "label": "Email",
+        "validation": ["required", { "rule": "email" }]
+    },
+    {
+        "name": "session",
+        "type": "select",
+        "label": "Session",
+        "defaultValue": "morning",
+        "options": [
+            { "value": "morning", "label": "Morning, 09:00-12:00" },
+            { "value": "afternoon", "label": "Afternoon, 13:00-16:00" }
+        ]
+    },
+    { "name": "forCompany", "type": "checkbox", "label": "Booking for a company" },
+    {
+        "name": "company",
+        "type": "group",
+        "label": "Company",
+        "layout": "row",
+        "showWhen": { "field": "forCompany", "is": true },
+        "fields": [
+            { "name": "name", "type": "text", "label": "Company name", "validation": ["required"] },
+            { "name": "vatNumber", "type": "text", "label": "VAT number" }
+        ]
+    },
+    {
+        "name": "attendees",
+        "type": "array",
+        "label": "Attendees",
+        "itemLabel": "Attendee",
+        "addLabel": "Add attendee",
+        "layout": "row",
+        "defaultValue": [{}],
+        "fields": [
+            { "name": "name", "type": "text", "label": "Name", "validation": ["required"] },
+            {
+                "name": "email",
+                "type": "email",
+                "label": "Email",
+                "validation": ["required", { "rule": "email" }]
+            }
+        ]
+    }
+]
