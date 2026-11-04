@@ -180,6 +180,19 @@ function SignupForm() {
 
 `useFormFromConfig` derives the default values and a Zod schema from the config; `ConfigFields` renders the controls onto the native Field/Control stack.
 
+`SchemaForm` does the same in one element, with `Form`'s submit button:
+
+```tsx
+import { SchemaForm } from '@react-formkit/core'
+
+<SchemaForm config={config} onSubmit={console.log} buttonLabel="Sign up" />
+```
+
+It takes `Form`'s submit-side props (`messages`, `mode`, `onSuccess`, `successContent`,
+`keepFormOnSuccess`, `loadingOverlay`, `resetOnSubmit`) plus `renderers`, and renders any children
+after the fields. Per-form `messages` reach the config's rules here, which they do not when a
+schema from `useFormFromConfig` is passed to `Form` ready-built.
+
 ### What the config is keyed on
 
 The defaults and the schema are memoised on the config's content rather than on the array, so an

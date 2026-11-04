@@ -2,6 +2,8 @@ export * from './config.types'
 export { useFormFromConfig } from './useFormFromConfig'
 export { buildSchema } from './buildSchema'
 export { ConfigFields } from './ConfigFields'
+export { SchemaForm } from './SchemaForm'
+export type { SchemaFormProps } from './SchemaForm'
 export {
     fieldRenderProps,
     resolveArrayItemRenderer,

@@ -49,6 +49,21 @@ function SignupForm() {
 }
 ```
 
+When nothing goes between the hook and the fields, `SchemaForm` is the same form in one element,
+with `Form`'s submit button:
+
+```tsx
+import { SchemaForm } from '@react-formkit/core'
+
+<SchemaForm config={config} onSubmit={onSubmit} buttonLabel="Sign up" />
+```
+
+It takes `renderers` (scoped to its fields, as on `ConfigFields`), `messages`, `mode`, `onSuccess`,
+`successContent`, `keepFormOnSuccess`, `loadingOverlay` and `resetOnSubmit`, and renders children
+after the fields and before the button. **Reach for it when a config form needs per-form
+`messages`**: it hands the form a schema builder, so the overrides reach the config's rules, while
+a schema from `useFormFromConfig` passed to `Form` is already built and keeps the app-wide strings.
+
 Do not mix the two for one form. A config already produces the schema; handing `Form` a
 separate hand-written schema alongside `ConfigFields` means two sources of truth for the same
 fields.
@@ -126,7 +141,8 @@ the Zod schema. Use the mechanisms below instead.
 
 **Do not pass an already-built schema when you want per-form messages.** The `messages` prop
 only affects a schema built inside the form, which is why `validationSchema` also accepts a
-builder function. A ready-made schema already carries its strings.
+builder function. A ready-made schema already carries its strings. The schema `useFormFromConfig`
+returns is one of those; for a config, use `SchemaForm`, which passes a builder for you.
 
 **Do not hand-write a required message.** The required indicator is inferred from the schema by
 `useIsFieldRequired`, and the message comes from the message map. Writing `'Required'` inline

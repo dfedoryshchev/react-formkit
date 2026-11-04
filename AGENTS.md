@@ -34,7 +34,7 @@ src/
   field/       FormField, Field, the field HOC chain, ConditionalField, FormFieldArray
   controls/    Control (the type router) + every concrete input
   validation/  validators, the message map, form-level rules, required detection
-  config/      config types, buildSchema, useFormFromConfig, ConfigFields, the renderer seam
+  config/      config types, buildSchema, useFormFromConfig, ConfigFields, SchemaForm, the renderer seam
   adapters/    renderer registries for component libraries, one entry point each (mantine/)
   styles/      theme.scss (CSS custom properties)
   index.ts     the public API barrel
@@ -70,6 +70,10 @@ ConfigFields          conditional wrapper + resolveFieldRenderer(registry, field
 
 The registry comes from `RendererContext`, defaulting to `nativeRenderers`, and the `renderers`
 prop on `ConfigFields` overrides it for one list.
+
+`SchemaForm` is that whole config path in one element: `useFormFromConfig`, then `BasicForm` with
+`Form`'s submit button, then `ConfigFields`. It hands the form a schema builder rather than the
+built schema, so the per-form `messages` prop reaches the config's rules.
 
 An adapter renderer joins at the same step as the native one but goes around `FormField`: it calls
 `useController` and `useIsFieldRequired` itself and hands the value, the error message, the
