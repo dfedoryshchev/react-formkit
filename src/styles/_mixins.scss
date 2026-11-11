@@ -1,0 +1,14 @@
+@mixin focus-ring {
+    &:focus {
+        border-color: var(--fk-focus-color, #485fc7);
+        outline: none;
+        box-shadow: 0 0 0 2px var(--fk-focus-ring, rgba(72, 95, 199, 0.15));
+    }
+}
+
+@mixin disabled {
+    &:disabled {
+        background-color: var(--fk-disabled-bg, #f5f5f5);
+        cursor: not-allowed;
+    }
+}
