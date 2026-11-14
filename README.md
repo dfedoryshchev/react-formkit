@@ -532,9 +532,33 @@ Styling is driven by CSS custom properties. Override them in your own `:root` (o
     --fk-border-color: #cbd5e0;
     --fk-focus-ring: rgba(43, 108, 176, 0.25);
     --fk-disabled-bg: #edf2f7;
+    --fk-readonly-bg: #f7fafc;
     --fk-radius: 6px;
 }
 ```
+
+To set them from code, describe the theme as a `FormTheme` and turn it into a `style` object with `themeToCssVars`. Every key is optional, and an unset key is left out, so the value from the enclosing scope still applies:
+
+```tsx
+import { Form, themeToCssVars, type FormTheme } from '@react-formkit/core'
+
+const brand: FormTheme = { focusColor: '#2b6cb0', radius: '6px' }
+
+<div style={themeToCssVars(brand)}>
+    <Form onSubmit={onSubmit}>...</Form>
+</div>
+```
+
+| `FormTheme` key | Custom property | Default |
+|---|---|---|
+| `borderColor` | `--fk-border-color` | `#dbdbdb` |
+| `focusColor` | `--fk-focus-color` | `#485fc7` |
+| `focusRing` | `--fk-focus-ring` | `rgba(72, 95, 199, 0.15)` |
+| `disabledBg` | `--fk-disabled-bg` | `#f5f5f5` |
+| `readonlyBg` | `--fk-readonly-bg` | `#fafafa` |
+| `radius` | `--fk-radius` | `4px` |
+
+`defaultTheme` holds the defaults as a `FormTheme`, for spreading a change over them.
 
 ## Dev
 

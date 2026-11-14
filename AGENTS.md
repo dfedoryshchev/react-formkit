@@ -36,7 +36,7 @@ src/
   validation/  validators, the message map, form-level rules, required detection
   config/      config types, buildSchema, useFormFromConfig, ConfigFields, SchemaForm, the renderer seam
   adapters/    renderer registries for component libraries, one entry point each (mantine/)
-  styles/      theme.scss (CSS custom properties)
+  styles/      theme.scss (CSS custom properties), theme.ts (their typed form, themeToCssVars)
   index.ts     the public API barrel
 tests/         mirrors src/ by area
 ```

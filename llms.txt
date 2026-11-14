@@ -162,6 +162,8 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
 
 - [src/styles/theme.scss](src/styles/theme.scss): the CSS custom properties available for
   theming (`--fk-focus-color`, `--fk-border-color`, `--fk-focus-ring`, `--fk-disabled-bg`,
-  `--fk-radius`).
+  `--fk-readonly-bg`, `--fk-radius`).
+- [src/styles/theme.ts](src/styles/theme.ts): `FormTheme`, `defaultTheme` and `themeToCssVars`,
+  the typed form of those properties, producing a `style` object for a wrapper element.
 - [tests](tests): vitest suites mirroring `src/` by area; the config and message suites are the
   clearest executable specification of the behaviour described above.

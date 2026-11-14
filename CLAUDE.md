@@ -549,7 +549,7 @@ asked at all once the transform changes the value's type.
 
 ## Styling
 
-Styling is CSS custom properties, not props or a theme object. Override them in any scope:
+Styling is CSS custom properties, not component props. Override them in any scope:
 
 ```css
 :root {
@@ -557,9 +557,16 @@ Styling is CSS custom properties, not props or a theme object. Override them in 
     --fk-border-color: #dbdbdb;
     --fk-focus-ring: rgba(72, 95, 199, 0.15);
     --fk-disabled-bg: #f5f5f5;
+    --fk-readonly-bg: #fafafa;
     --fk-radius: 4px;
 }
 ```
+
+From code, `themeToCssVars(theme)` turns a `FormTheme` (`borderColor`, `focusColor`, `focusRing`,
+`disabledBg`, `readonlyBg`, `radius`, all optional strings) into a `style` object for a wrapper
+element. It leaves unset keys out, so they keep the enclosing scope's value; `defaultTheme` holds
+the defaults. There is no theme provider: the variables cascade, so put the `style` on whatever
+element should scope them.
 
 ## Current limits, so you do not generate around them
 
