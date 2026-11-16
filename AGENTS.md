@@ -304,6 +304,16 @@ side knows the element shape, so `append` seeds a new item from the item fields'
 `defaultValue` item that leaves a field out gets that field's default too - which is why the defaults
 signature of an array covers its item fields as well as its own `defaultValue`.
 
+**An array's controls are a slot on the one component that owns `useFieldArray`, never a second
+`useFieldArray` for the same name.** `FormFieldArray` hands `append` out through `actions` and
+`remove` and the moves through the row so that exactly one hook instance exists per array. Two
+instances do not stay in sync: each keeps its own `fields` state, and react-hook-form emits on its
+array subject, the one every instance subscribes to, only from `setValue` and `reset`. `append`,
+`remove` and `move` update the calling instance's state directly and tell the rest of the form
+through the state subject alone, so a button built on its own `useFieldArray({ name })` changes the
+form values while the list beside it keeps rendering the old rows. Checked against react-hook-form
+7.88; a change here has to keep one instance, or re-read that emit path first.
+
 **`nativeRenderers` has one entry, and filling in its `byType` undoes the reason it exists.**
 `Control`'s switch is the single place a control type is mapped to a component. A per-type map in
 `config/` was tried once here and reverted for exactly that reason - it was a second copy of the
