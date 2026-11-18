@@ -314,6 +314,18 @@ through the state subject alone, so a button built on its own `useFieldArray({ n
 form values while the list beside it keeps rendering the old rows. Checked against react-hook-form
 7.88; a change here has to keep one instance, or re-read that emit path first.
 
+**Theming has two separate halves, and the `--fk-*` variables are the native one only.** Every
+`var(--fk-...)` is in a control's own stylesheet or `styles/_mixins.scss`; nothing under `adapters/`
+reads one, because an adapter renders the library's own input and that library owns its theme. Do
+not map `FormTheme` onto an adapter's theme object: it would be a second description of the same
+colours that drifts from the library's, and it is why `FormTheme` stays a set of variables with no
+provider or `theme` prop in front of it - a provider would only be another path to the same custom
+properties, which already cascade from any element. Presets and dark mode are likewise not shipped;
+they are a selector that overrides the variables, written by the consumer. A new native control
+should read the variables with the same literal fallbacks as `theme.scss`, since the stylesheet may
+not be imported; the checkbox, radio, checkbox-group, label and field-message styles do not read
+them yet.
+
 **`nativeRenderers` has one entry, and filling in its `byType` undoes the reason it exists.**
 `Control`'s switch is the single place a control type is mapped to a component. A per-type map in
 `config/` was tried once here and reverted for exactly that reason - it was a second copy of the

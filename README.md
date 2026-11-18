@@ -560,6 +560,18 @@ const brand: FormTheme = { focusColor: '#2b6cb0', radius: '6px' }
 
 `defaultTheme` holds the defaults as a `FormTheme`, for spreading a change over them.
 
+**The variables theme the native controls only.** The Mantine adapter renders Mantine's own inputs, so it is themed through `MantineProvider` and never reads a `--fk-*` property; a mixed form (the `phone` control falls back to the native one) takes each half's theme separately. Among the native controls, the text-like inputs, select, autocomplete, switch and the group fieldset read the variables; the checkbox, radio and checkbox-group controls, the label and the field message do not, so they keep their own styles.
+
+There is no theme provider, no `theme` prop and no bundled presets or dark mode. Because the variables cascade, a preset is a plain rule you write, and dark mode is the same override under your own selector:
+
+```css
+.dark {
+    --fk-border-color: #3a3f4b;
+    --fk-disabled-bg: #23262d;
+    --fk-readonly-bg: #1d2026;
+}
+```
+
 ## Dev
 
 ```bash
