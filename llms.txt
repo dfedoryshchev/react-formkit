@@ -9,7 +9,7 @@ Version 0.2.1, MIT. Built against React 19, react-hook-form 7, @hookform/resolve
 zod 4.3+; zod 3 is not supported.
 `react-select` and `react-phone-input-2` back the multiselect and phone controls, but the package
 root imports both at the top level, so they have to be installed even by an app that uses neither.
-Type declarations are not generated yet, so the published package ships without `.d.ts` files.
+The package ships `.d.ts` files for the root and `/mantine` entries.
 
 Two ways to build a form, sharing one runtime:
 

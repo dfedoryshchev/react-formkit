@@ -387,5 +387,5 @@ someone edits the line below it is not worth adding.
 ## Known limitations
 
 The README's "Known limitations" list is the current one; read it before proposing a fix for
-something already known and deliberately open. Type declarations are not generated yet, so the
-published package ships JavaScript and CSS without `.d.ts` files.
+something already known and deliberately open. `npm run build` also emits the `.d.ts` files into
+`dist/`, through `vite-plugin-dts` and `tsconfig.build.json`.

@@ -582,6 +582,5 @@ element should scope them.
   to be installed even by an app that uses neither the multiselect nor the phone control.
 - The Mantine adapter (`@react-formkit/core/mantine`) covers every control type but `phone`, which
   falls back to the native control. Any other component library means writing the renderers.
-- Type declarations are not generated yet, so there are no `.d.ts` files in the published package.
 - The loading overlay's styling is inline, `z-index: 10` included, so a `.fk-form-loading-overlay`
   rule can add to it but cannot restyle what is already set there.

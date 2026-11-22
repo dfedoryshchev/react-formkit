@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import dts from 'vite-plugin-dts'
 import path from 'path'
 import pkg from './package.json'
 
@@ -18,7 +19,7 @@ const isExternal = (id: string) =>
 
 // Library build for src/. The dev playground uses dev/vite.config.ts.
 export default defineConfig({
-    plugins: [react()],
+    plugins: [react(), dts({ tsconfigPath: './tsconfig.build.json' })],
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'src'),

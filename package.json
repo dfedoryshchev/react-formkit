@@ -54,11 +54,13 @@
     "sass": "^1.77.6",
     "typescript": "^5.8.0",
     "vite": "^6.4.3",
+    "vite-plugin-dts": "^5.1.2",
     "vitest": "^4.1.11",
     "zod": "^4.3.0"
   },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "llms.txt",
@@ -67,10 +69,12 @@
   ],
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./mantine": {
+      "types": "./dist/adapters/mantine/index.d.ts",
       "import": "./dist/mantine.mjs",
       "require": "./dist/mantine.cjs"
     }

@@ -583,6 +583,6 @@ npm run build  # library build
 
 ## Status
 
-Active development. Core form system, validation, cross-field rules, and the full control set are functional. Type declarations are not generated yet.
+Active development. Core form system, validation, cross-field rules, and the full control set are functional. The package ships type declarations for the root and `/mantine` entries.
 
 What a coding agent costs to build a form with this package, measured on two tasks: [docs/agent-cost.md](docs/agent-cost.md).
