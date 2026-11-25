@@ -70,10 +70,17 @@ const BasicForm: React.FC<BasicFormProps> = ({
         mode,
     })
 
-    const handleSubmit = async (data: any) => {
-        const result = await onSubmit(data)
-        if (resetOnSubmit) methods.reset()
-        onSuccess?.(result, data)
+    // react-hook-form (7.92+) drops the submit's own outcome when a reset runs
+    // inside the handler, so the reset waits until the submit has settled.
+    const submitForm = async (event?: React.BaseSyntheticEvent) => {
+        let succeeded = false
+        await methods.handleSubmit(async (data: any) => {
+            const result = await onSubmit(data)
+            onSuccess?.(result, data)
+            succeeded = true
+        })(event)
+        if (succeeded && resetOnSubmit)
+            methods.reset(undefined, { keepIsSubmitted: true, keepIsSubmitSuccessful: true })
     }
 
     const busy = !!loadingOverlay && methods.formState.isSubmitting
@@ -92,7 +99,7 @@ const BasicForm: React.FC<BasicFormProps> = ({
                     <div style={{ position: 'relative' }}>
                         {!(showSuccess && !keepFormOnSuccess) && (
                             <form
-                                onSubmit={methods.handleSubmit(handleSubmit)}
+                                onSubmit={submitForm}
                                 aria-busy={busy || undefined}
                                 style={busy ? { pointerEvents: 'none' } : undefined}
                             >
