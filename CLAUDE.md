@@ -575,7 +575,9 @@ element should scope them.
 - Async and cross-field rules are not part of the config schema; `asyncCheck` and
   `useFormLevelValidators` apply to a hand-written schema only.
 - `required` is not enforced across every field type, and non-required fields are not made optional.
-- A hidden conditional field is absent from the submitted values rather than present and empty.
+- A hidden `showWhen` field in a config is absent from the submitted values rather than present
+  and empty, whether it was never shown or shown and then hidden. A standalone `ConditionalField`
+  drops only the names in `clear`, and only when its branch hides.
 - A changed `defaultValue` in a config updates the returned `defaults` but does not reseed a
   form that is already mounted, and duplicate names throw.
 - `react-select` and `react-phone-input-2` are reached from the package root barrel, so both have

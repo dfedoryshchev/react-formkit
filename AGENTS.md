@@ -246,9 +246,11 @@ them apart and asking it for a channel would light every row's indicator at once
 looked up by schema node *and* field path, which is the same pair `asyncCheck` keys its state on.
 
 **Config conditionals clear; hand-written ones do not, by default.** A `showWhen` field in a
-config is validated only while visible and its value is dropped when it hides. The standalone
-`ConditionalField` takes `clear` as an opt-in, because a branch that is only collapsed for space
-should keep what was typed into it. Do not quietly align the two: they are different defaults on
+config is validated only while visible and its value is dropped when it hides. A field never
+shown is still in the form state, holding its default so it opens on it; `buildSchema` drops every
+hidden `showWhen` key from the parsed output, so the submitted values leave it out too. The
+standalone `ConditionalField` takes `clear` as an opt-in, because a branch that is only collapsed
+for space should keep what was typed into it. Do not quietly align the two: they are different defaults on
 purpose.
 
 **The config memo is keyed on content, and each signature covers exactly what its value reads.**

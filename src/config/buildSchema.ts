@@ -134,18 +134,36 @@ export function buildSchema(config: FormConfig): ZodType {
     const object = z.object(shape)
     if (conditional.length === 0) return object
 
-    return object.superRefine((values, ctx) => {
-        for (const { name, condition, schema } of conditional) {
-            const watched = (values as Record<string, unknown>)[condition.field]
-            if (!matchesCondition(watched, condition)) continue
+    return object
+        .superRefine((values, ctx) => {
+            for (const { name, condition, schema } of conditional) {
+                const watched = (values as Record<string, unknown>)[condition.field]
+                if (!matchesCondition(watched, condition)) continue
 
-            const result = schema.safeParse((values as Record<string, unknown>)[name])
-            if (result.success) continue
-            for (const issue of result.error.issues) {
-                // Re-anchor onto the field's own path so the message lands on
-                // the input rather than at the form root.
-                ctx.addIssue({ ...issue, path: [name, ...issue.path] })
+                const result = schema.safeParse((values as Record<string, unknown>)[name])
+                if (result.success) continue
+                for (const issue of result.error.issues) {
+                    // Re-anchor onto the field's own path so the message lands on
+                    // the input rather than at the form root.
+                    ctx.addIssue({ ...issue, path: [name, ...issue.path] })
+                }
             }
-        }
-    })
+        })
+        .transform((values) => {
+            // The hide only unregisters on a visible -> hidden edge, so a field
+            // that was never shown still holds its default in the form state;
+            // it is dropped from the parsed output here instead.
+            const output: Record<string, unknown> = { ...values }
+            for (const { name, condition, schema } of conditional) {
+                if (!matchesCondition(values[condition.field], condition)) {
+                    delete output[name]
+                    continue
+                }
+                // The key itself is lenient, so a visible group or array is
+                // re-read through its real schema for its own hidden children.
+                const result = schema.safeParse(output[name])
+                if (result.success) output[name] = result.data
+            }
+            return output
+        })
 }

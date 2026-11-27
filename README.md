@@ -517,7 +517,7 @@ entry in the table), for a registry of your own.
 - Duplicate field names in a config throw rather than resolving to the last one.
 - `required` is not yet enforced across all field types, and non-required fields are not made optional.
 - A config `array` takes no rules of its own, so a minimum or maximum item count needs a hand-written schema.
-- A conditional field is cleared by dropping it from the form, so a hidden branch is absent from the submitted values rather than present and empty.
+- A hidden `showWhen` field in a config is absent from the submitted values rather than present and empty, whether it was never shown or shown and then hidden. A standalone `ConditionalField` drops only the names in `clear`, and only when its branch hides.
 - Async and cross-field rules are not part of the config schema (use `useFormLevelValidators`).
 - The Mantine adapter covers every control type but `phone`, which still renders through the native control.
 - The loading overlay is styled inline, `z-index: 10` included, so `.fk-form-loading-overlay` can add to it but cannot restyle what is set there.

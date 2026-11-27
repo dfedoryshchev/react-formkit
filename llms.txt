@@ -113,7 +113,8 @@ entry point, `@react-formkit/core/mantine`, so that `@mantine/core` stays an opt
   leaves it unasked.
 - [src/config/buildSchema.ts](src/config/buildSchema.ts): turns `ValidationDescriptor[]` into a
   Zod schema. An explicit `message` on a descriptor wins; otherwise the message map supplies the
-  default. A `showWhen` field, group or array is validated only while its condition holds. An
+  default. A `showWhen` field, group or array is validated only while its condition holds, and
+  left out of the parsed output while it does not, never-shown fields included. An
   array's item fields are validated per item, a child's `showWhen` against a sibling in its item.
 - [src/config/useFormFromConfig.ts](src/config/useFormFromConfig.ts): derives the defaults and the
   schema, **memoised on the config's content, not the array**: the schema on each field's `name`,

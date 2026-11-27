@@ -125,3 +125,111 @@ describe('SchemaForm', () => {
         expect(onSuccess.mock.calls[0][0]).toEqual({ id: 7 })
     })
 })
+
+describe('SchemaForm - conditional fields in the submitted values', () => {
+    const shipping: FormConfig = [
+        { name: 'ship', type: 'checkbox', label: 'Ship it' },
+        {
+            name: 'city',
+            type: 'text',
+            label: 'City',
+            defaultValue: 'Leeds',
+            showWhen: { field: 'ship', is: true },
+        },
+    ]
+
+    const submitted = async (
+        form: ReturnType<typeof mount>,
+        onSubmit: ReturnType<typeof vi.fn>,
+    ) => {
+        fireEvent.click(form.view.getByRole('button', { name: 'Submit' }))
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+        return onSubmit.mock.calls[0][0]
+    }
+
+    it('leaves out a field that was never shown', async () => {
+        const onSubmit = vi.fn()
+        const form = mount(<SchemaForm config={shipping} onSubmit={onSubmit} />)
+        expect(await submitted(form, onSubmit)).toEqual({ ship: false })
+    })
+
+    it('leaves out a field that was shown and then hidden', async () => {
+        const onSubmit = vi.fn()
+        const form = mount(<SchemaForm config={shipping} onSubmit={onSubmit} />)
+        const toggle = () => fireEvent.click(form.view.getByRole('checkbox', { name: 'Ship it' }))
+        toggle()
+        await waitFor(() =>
+            expect(form.container.querySelector('input[name="city"]')).not.toBeNull(),
+        )
+        form.type('city', 'York')
+        toggle()
+        await waitFor(() => expect(form.container.querySelector('input[name="city"]')).toBeNull())
+        expect(await submitted(form, onSubmit)).toEqual({ ship: false })
+    })
+
+    it('submits a shown field, starting from its default', async () => {
+        const onSubmit = vi.fn()
+        const form = mount(<SchemaForm config={shipping} onSubmit={onSubmit} />)
+        fireEvent.click(form.view.getByRole('checkbox', { name: 'Ship it' }))
+        await waitFor(() =>
+            expect(
+                form.container.querySelector<HTMLInputElement>('input[name="city"]')?.value,
+            ).toBe('Leeds'),
+        )
+        expect(await submitted(form, onSubmit)).toEqual({ ship: true, city: 'Leeds' })
+    })
+
+    it('leaves out a never-shown child of a visible group', async () => {
+        const onSubmit = vi.fn()
+        const nested: FormConfig = [
+            { name: 'ship', type: 'checkbox', label: 'Ship it' },
+            {
+                name: 'delivery',
+                type: 'group',
+                label: 'Delivery',
+                showWhen: { field: 'ship', is: true },
+                fields: [
+                    { name: 'express', type: 'checkbox', label: 'Express' },
+                    {
+                        name: 'slot',
+                        type: 'text',
+                        label: 'Slot',
+                        showWhen: { field: 'express', is: true },
+                    },
+                ],
+            },
+        ]
+        const form = mount(<SchemaForm config={nested} onSubmit={onSubmit} />)
+        fireEvent.click(form.view.getByRole('checkbox', { name: 'Ship it' }))
+        await waitFor(() =>
+            expect(form.view.getByRole('checkbox', { name: 'Express' })).toBeTruthy(),
+        )
+        expect(await submitted(form, onSubmit)).toEqual({
+            ship: true,
+            delivery: { express: false },
+        })
+    })
+
+    it('leaves out a never-shown field inside an array item', async () => {
+        const onSubmit = vi.fn()
+        const items: FormConfig = [
+            {
+                name: 'items',
+                type: 'array',
+                itemLabel: 'Item',
+                defaultValue: [{}],
+                fields: [
+                    { name: 'gift', type: 'checkbox', label: 'Gift' },
+                    {
+                        name: 'note',
+                        type: 'text',
+                        label: 'Note',
+                        showWhen: { field: 'gift', is: true },
+                    },
+                ],
+            },
+        ]
+        const form = mount(<SchemaForm config={items} onSubmit={onSubmit} />)
+        expect(await submitted(form, onSubmit)).toEqual({ items: [{ gift: false }] })
+    })
+})
